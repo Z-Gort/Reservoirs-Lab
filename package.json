@@ -18,23 +18,30 @@
     "test:unit": "vitest src"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@mui/material": "^6.1.8",
     "os-utils": "^0.0.14",
+    "pg": "^8.13.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.0.1",
     "recharts": "^2.13.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.5.5",
     "@types/os-utils": "^0.0.4",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
     "cross-env": "^7.0.3",
     "electron": "^32.1.2",
     "electron-builder": "^25.0.5",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
     "vite": "^5.4.7",
     "vitest": "^2.1.5"
   }

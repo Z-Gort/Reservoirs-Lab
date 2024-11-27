@@ -25,7 +25,7 @@ header button {
 }
 
 #maximize {
-  background-color: lime;
+  background-color: rgb(31, 206, 31);
 }
 
 .main {
@@ -37,6 +37,7 @@ header button {
   max-width: 900px;
   margin: auto;
   margin-top: 4rem;
+  padding: 4rem; 
 }
 
 .mainGrid {

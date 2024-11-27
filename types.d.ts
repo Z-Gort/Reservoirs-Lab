@@ -19,6 +19,7 @@ type EventPayloadMapping = {
   getStaticData: StaticData;
   changeView: View;
   sendFrameAction: FrameWindowAction;
+  openPopup: undefined;
 };
 
 type UnsubscribeFunction = () => void;
@@ -33,5 +34,10 @@ interface Window {
       callback: (view: View) => void
     ) => UnsubscribeFunction;
     sendFrameAction: (payload: FrameWindowAction) => void;
+    
+    send: <Key extends keyof EventPayloadMapping>(
+      key: Key,
+      payload: EventPayloadMapping[Key]
+    ) => void;
   };
 }

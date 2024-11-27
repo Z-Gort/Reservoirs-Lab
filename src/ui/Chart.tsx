@@ -9,8 +9,8 @@ export type ChartProps = {
 
 export const COLOR_MAP = {
   CPU: {
-    stroke: '#5DD4EE',
-    fill: '#0A4D5C',
+    stroke: '#FF0000', // changed from '#5DD4EE' to '#FF0000' (red)
+    fill: '#8B0A0A', // changed from '#0A4D5C' to '#8B0A0A' (dark red)
   },
   RAM: {
     stroke: '#E99311',

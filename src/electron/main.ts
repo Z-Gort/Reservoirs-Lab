@@ -39,10 +39,17 @@ app.on("ready", () => {
     }
   });
 
+  // Handle popup window creation
+  ipcMainOn("openPopup", () => {
+    createPopupWindow(mainWindow); // Pass `mainWindow` as a parameter
+  })
+
   createTray(mainWindow);
   handleCloseEvents(mainWindow);
   createMenu(mainWindow);
 });
+
+
 
 function handleCloseEvents(mainWindow: BrowserWindow) {
   let willClose = false;
@@ -64,5 +71,29 @@ function handleCloseEvents(mainWindow: BrowserWindow) {
 
   mainWindow.on("show", () => {
     willClose = false;
+  });
+}
+
+function createPopupWindow(parentWindow: BrowserWindow) {
+  const popupWindow = new BrowserWindow({
+    width: 500, // Set an appropriate width
+    height: 550, // Set an appropriate height
+    parent: parentWindow, // Ensure it's a child of the main window
+    modal: true, // Block interaction with the main window
+    resizable: false, // Prevent resizing
+    webPreferences: {
+      preload: getPreloadPath(),
+    },
+  });
+
+  if (isDev()) {
+    popupWindow.loadURL("http://localhost:5123/#/popup"); // Use hash route
+  } else {
+    popupWindow.loadFile(getUIPath(), { hash: "#/popup" });
+  }
+
+
+  popupWindow.on("closed", () => {
+    // Cleanup is handled automatically as `popupWindow` is scoped to this function
   });
 }

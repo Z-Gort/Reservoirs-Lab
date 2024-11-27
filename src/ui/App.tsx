@@ -3,6 +3,8 @@ import reactLogo from './assets/react.svg';
 import './App.css';
 import { useStatistics } from './useStatistics';
 import { Chart } from './Chart';
+import Button from '@mui/material/Button';
+import { styled } from "@mui/material/styles";
 
 function App() {
   const staticData = useStaticData();
@@ -35,44 +37,70 @@ function App() {
     return window.electron.subscribeChangeView((view) => setActiveView(view));
   }, []);
 
+  const openPopup = () => {
+    window.electron.send("openPopup", undefined); // Send event to main process
+  };
+
   return (
     <div className="App">
       <Header />
       <div className="main">
-        <div>
-          <SelectOption
-            onClick={() => setActiveView('CPU')}
-            title="CPU"
-            view="CPU"
-            subTitle={staticData?.cpuModel ?? ''}
-            data={cpuUsages}
-          />
-          <SelectOption
-            onClick={() => setActiveView('RAM')}
-            title="RAM"
-            view="RAM"
-            subTitle={(staticData?.totalMemoryGB.toString() ?? '') + ' GB'}
-            data={ramUsages}
-          />
-          <SelectOption
-            onClick={() => setActiveView('STORAGE')}
-            title="STORAGE"
-            view="STORAGE"
-            subTitle={(staticData?.totalStorage.toString() ?? '') + ' GB'}
-            data={storageUsages}
-          />
-        </div>
-        <div className="mainGrid">
-          <Chart
-            selectedView={activeView}
-            data={activeUsages}
-            maxDataPoints={10}
-          />
-        </div>
+        <Button onClick={openPopup}
+          variant="contained"
+          style={{
+            borderRadius: "50%", // Circular shape
+            width: "2.5rem", // Smaller size
+            height: "2.5rem", // Smaller size
+            fontSize: "1.5rem", // Bigger "+" for better balance
+            minWidth: "unset", // Prevents default Material-UI width
+            padding: 0, // Ensures content is centered
+            lineHeight: 1, // Prevents vertical misalignment
+          }}
+        >
+          +
+        </Button>
       </div>
     </div>
   );
 }
+
+
+    // <div className="App">
+    //   <Header />
+    //   <div className="main">
+    //     <div>
+    //       <SelectOption
+    //         onClick={() => setActiveView('CPU')}
+    //         title="CPU"
+    //         view="CPU"
+    //         subTitle={staticData?.cpuModel ?? ''}
+    //         data={cpuUsages}
+    //       />
+    //       <SelectOption
+    //         onClick={() => setActiveView('RAM')}
+    //         title="RAM"
+    //         view="RAM"
+    //         subTitle={(staticData?.totalMemoryGB.toString() ?? '') + ' GB'}
+    //         data={ramUsages}
+    //       />
+    //       <SelectOption
+    //         onClick={() => setActiveView('STORAGE')}
+    //         title="STORAGE"
+    //         view="STORAGE"
+    //         subTitle={(staticData?.totalStorage.toString() ?? '') + ' GB'}
+    //         data={storageUsages}
+    //       />
+    //     </div>
+    //     <div className="mainGrid">
+    //       <Chart
+    //         selectedView={activeView}
+    //         data={activeUsages}
+    //         maxDataPoints={10}
+    //       />
+    //     </div>
+    //   </div>
+    // </div>
+  // );
 
 function SelectOption(props: {
   title: string;
