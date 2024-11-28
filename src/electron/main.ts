@@ -122,6 +122,32 @@ app.on("ready", () => {
     return connections; // Send the connections back to the renderer process
   });
 
+  ipcMainOn("removeConnection", (connectionToRemove) => {
+    console.log("Removing connection:", connectionToRemove);
+  
+    // Get existing connections
+    const connections: DatabaseConnection[] = store.get("connections", []);
+  
+    // Filter out the connection to remove
+    const updatedConnections = connections.filter(
+      (connection) =>
+        !(
+          connection.host === connectionToRemove.host &&
+          connection.port === connectionToRemove.port &&
+          connection.user === connectionToRemove.user &&
+          connection.database === connectionToRemove.database
+        )
+    );
+  
+    // Update the store
+    store.set("connections", updatedConnections);
+  
+    // Notify the mainWindow of the updated connections
+    mainWindow.webContents.send("connectionsUpdated", updatedConnections);
+  
+    console.log("Connection removed successfully.");
+  });
+
   createTray(mainWindow);
   handleCloseEvents(mainWindow);
   createMenu(mainWindow);

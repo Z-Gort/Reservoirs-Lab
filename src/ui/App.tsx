@@ -5,6 +5,10 @@ import { useStatistics } from './useStatistics';
 import { Chart } from './Chart';
 import Button from '@mui/material/Button';
 import { styled } from "@mui/material/styles";
+import { Box, Fab } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import logoImage from "./assets/logo.png";
+import ConnectionsGrid from "./components/ConnectionsGrid";
 
 function App() {
   const staticData = useStaticData();
@@ -62,25 +66,41 @@ function App() {
   }, []);
 
   return (
-    <div className="App">
-      <Header />
-      <div className="main">
-        <Button onClick={openPopup}
-          variant="contained"
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        justifyContent: "space-between",
+        position: "relative", // For floating button positioning
+      }}
+    >
+      {/* Top Header Section */}
+      <img
+          src={logoImage}
+          alt="App Logo"
           style={{
-            borderRadius: "50%", // Circular shape
-            width: "2.5rem", // Smaller size
-            height: "2.5rem", // Smaller size
-            fontSize: "1.5rem", // Bigger "+" for better balance
-            minWidth: "unset", // Prevents default Material-UI width
-            padding: 0, // Ensures content is centered
-            lineHeight: 1, // Prevents vertical misalignment
+            height: "80px",
           }}
-        >
-          +
-        </Button>
-      </div>
-    </div>
+        />
+
+      {/* Connections Grid */}
+      <ConnectionsGrid connections={connections} />
+
+      {/* Floating Add Button */}
+      <Fab
+        color="primary"
+        aria-label="add"
+        onClick={openPopup}
+        sx={{
+          position: "absolute",
+          bottom: "2rem",
+          right: "2rem",
+        }}
+      >
+        <AddIcon />
+      </Fab>
+    </Box>
   );
 }
 

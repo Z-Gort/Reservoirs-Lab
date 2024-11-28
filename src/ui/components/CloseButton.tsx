@@ -4,16 +4,17 @@ import CloseIcon from "@mui/icons-material/Close";
 
 interface CloseButtonProps {
   onClick: () => void;
+  sx?: object; // Allow additional styles to be passed
 }
 
-const CloseButton: React.FC<CloseButtonProps> = ({ onClick }) => {
+const CloseButton: React.FC<CloseButtonProps> = ({ onClick, sx }) => {
   return (
     <IconButton
       onClick={onClick}
       sx={{
         position: "absolute",
         top: "0.5rem", // Adjust closer to the top
-        left: "0.5rem", // Move to the right corner
+        right: "0.5rem", // Align to the right corner
         width: "1.5rem", // Smaller size
         height: "1.5rem", // Smaller size
         padding: 0, // Remove extra padding
@@ -22,6 +23,7 @@ const CloseButton: React.FC<CloseButtonProps> = ({ onClick }) => {
         "&:hover": {
           backgroundColor: "rgba(255, 0, 0, 0.1)", // Light red hover effect
         },
+        ...sx, // Allow additional styles to override defaults
       }}
     >
       <CloseIcon

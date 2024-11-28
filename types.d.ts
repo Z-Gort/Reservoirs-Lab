@@ -33,6 +33,7 @@ type EventPayloadMapping = {
   };
   getConnections: DatabaseConnection[];
   connectionsUpdated: DatabaseConnection[];
+  removeConnection: DatabaseConnection;
 };
 
 type DatabaseConnection = {
