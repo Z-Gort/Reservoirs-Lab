@@ -31,7 +31,16 @@ type EventPayloadMapping = {
     success: boolean;
     error?: string;
   };
-  
+  getConnections: DatabaseConnection[];
+  connectionsUpdated: DatabaseConnection[];
+};
+
+type DatabaseConnection = {
+  host: string;
+  port: string;
+  user: string;
+  password: string;
+  database: string;
 };
 
 type UnsubscribeFunction = () => void;
@@ -55,5 +64,6 @@ interface Window {
       key: Key,
       callback: (payload: EventPayloadMapping[Key]) => void
     ) => () => void;
+    getConnections: () => Promise<DatabaseConnection[]>;
   };
 }

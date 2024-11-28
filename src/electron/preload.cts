@@ -17,6 +17,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
 
   send: ipcSend,
   on: ipcOn,
+  getConnections: () => ipcInvoke('getConnections'),
+  
 } satisfies Window['electron']);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(

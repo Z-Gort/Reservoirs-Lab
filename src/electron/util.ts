@@ -39,10 +39,15 @@ export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
 }
 
 export function validateEventFrame(frame: WebFrameMain) {
+  const uiPath = pathToFileURL(getUIPath()).toString();
+
+  // Allow localhost in development
   if (isDev() && new URL(frame.url).host === 'localhost:5123') {
     return;
   }
-  if (frame.url !== pathToFileURL(getUIPath()).toString()) {
+
+  // Allow hash-based routes or slight variations
+  if (!frame.url.startsWith(uiPath)) {
     throw new Error('Malicious event');
   }
 }

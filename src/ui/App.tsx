@@ -40,6 +40,26 @@ function App() {
   const openPopup = () => {
     window.electron.send("openPopup", undefined); // Send event to main process
   };
+  const [connections, setConnections] = useState<DatabaseConnection[]>([]);
+
+  useEffect(() => {
+    // Fetch initial connections on app load
+    window.electron.getConnections().then((initialConnections) => {
+      console.log("getting initial connections");
+      setConnections(initialConnections);
+    });
+
+    // Listen for updates from the main process
+    const unsubscribe = window.electron.on("connectionsUpdated", (updatedConnections) => {
+      console.log("Connections updated:", updatedConnections);
+      setConnections(updatedConnections);
+    });
+
+    // Cleanup listener on component unmount
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="App">
