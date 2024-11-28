@@ -1,5 +1,8 @@
 const electron = require('electron');
 
+/*
+Functions for sending events from rendered back to main
+*/
 electron.contextBridge.exposeInMainWorld('electron', {
   subscribeStatistics: (callback) =>
     ipcOn('statistics', (stats) => {
@@ -13,6 +16,7 @@ electron.contextBridge.exposeInMainWorld('electron', {
   sendFrameAction: (payload) => ipcSend('sendFrameAction', payload),
 
   send: ipcSend,
+  on: ipcOn,
 } satisfies Window['electron']);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(
@@ -25,6 +29,8 @@ function ipcOn<Key extends keyof EventPayloadMapping>(
   key: Key,
   callback: (payload: EventPayloadMapping[Key]) => void
 ) {
+  console.log(`ipcOn triggered for event: ${key}`, callback);
+
   const cb = (_: Electron.IpcRendererEvent, payload: any) => callback(payload);
   electron.ipcRenderer.on(key, cb);
   return () => electron.ipcRenderer.off(key, cb);

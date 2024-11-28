@@ -2,6 +2,9 @@ import { ipcMain, WebContents, WebFrameMain } from 'electron';
 import { getUIPath } from './pathResolver.js';
 import { pathToFileURL } from 'url';
 
+/*
+Functions for sending events from main to renderer
+*/
 export function isDev(): boolean {
   return process.env.NODE_ENV === 'development';
 }
@@ -31,6 +34,7 @@ export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
   webContents: WebContents,
   payload: EventPayloadMapping[Key]
 ) {
+  console.log("sending", key, payload)
   webContents.send(key, payload);
 }
 

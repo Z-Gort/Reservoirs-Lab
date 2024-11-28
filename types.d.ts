@@ -20,6 +20,18 @@ type EventPayloadMapping = {
   changeView: View;
   sendFrameAction: FrameWindowAction;
   openPopup: undefined;
+  connectToDatabase: {
+    host: string;
+    port: string;
+    user: string;
+    password: string;
+    database: string;
+  };
+  databaseConnectionStatus: {
+    success: boolean;
+    error?: string;
+  };
+  
 };
 
 type UnsubscribeFunction = () => void;
@@ -39,5 +51,9 @@ interface Window {
       key: Key,
       payload: EventPayloadMapping[Key]
     ) => void;
+    on: <Key extends keyof EventPayloadMapping>(
+      key: Key,
+      callback: (payload: EventPayloadMapping[Key]) => void
+    ) => () => void;
   };
 }
