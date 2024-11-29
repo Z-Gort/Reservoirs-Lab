@@ -3,7 +3,7 @@ import { IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 interface CloseButtonProps {
-  onClick: () => void;
+  onClick: (e?: React.MouseEvent) => void;
   sx?: object; // Allow additional styles to be passed
 }
 
@@ -14,7 +14,7 @@ const CloseButton: React.FC<CloseButtonProps> = ({ onClick, sx }) => {
       sx={{
         position: "absolute",
         top: "0.5rem", // Adjust closer to the top
-        right: "0.5rem", // Align to the right corner
+        left: "0.5rem",
         width: "1.5rem", // Smaller size
         height: "1.5rem", // Smaller size
         padding: 0, // Remove extra padding

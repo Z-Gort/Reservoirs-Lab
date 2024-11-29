@@ -4,9 +4,13 @@ import ConnectionCard from "./ConnectionCard";
 
 interface ConnectionsGridProps {
   connections: DatabaseConnection[];
+  onOpenDatabase: (connection: DatabaseConnection) => void; // Add the callback prop
 }
 
-const ConnectionsGrid: React.FC<ConnectionsGridProps> = ({ connections }) => (
+const ConnectionsGrid: React.FC<ConnectionsGridProps> = ({
+  connections,
+  onOpenDatabase, // Destructure the callback prop
+}) => (
   <Grid
     container
     spacing={2}
@@ -18,12 +22,16 @@ const ConnectionsGrid: React.FC<ConnectionsGridProps> = ({ connections }) => (
   >
     {connections.map((connection, index) => (
       <Grid item xs={12} sm={6} md={4} key={index}>
-        <ConnectionCard connection={connection} />
+        <ConnectionCard
+          connection={connection}
+          onOpenDatabase={() => onOpenDatabase(connection)} // Pass the callback to the card
+        />
       </Grid>
     ))}
   </Grid>
 );
 
 export default ConnectionsGrid;
+
 
 

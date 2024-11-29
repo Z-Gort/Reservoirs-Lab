@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route } from "react-router-dom"; // Use HashRouter
 import "./index.css";
 import App from "./App.tsx";
 import Popup from "./Popup.tsx";
+import DatabasePage from "./DataBasePage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -11,6 +12,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/popup" element={<Popup />} />
+        <Route path="/database" element={<DatabasePage />} />
       </Routes>
     </HashRouter>
   </StrictMode>

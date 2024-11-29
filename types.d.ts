@@ -10,9 +10,9 @@ type StaticData = {
   totalMemoryGB: number;
 };
 
-type View = 'CPU' | 'RAM' | 'STORAGE';
+type View = "CPU" | "RAM" | "STORAGE";
 
-type FrameWindowAction = 'CLOSE' | 'MAXIMIZE' | 'MINIMIZE';
+type FrameWindowAction = "CLOSE" | "MAXIMIZE" | "MINIMIZE";
 
 type EventPayloadMapping = {
   statistics: Statistics;
@@ -34,6 +34,15 @@ type EventPayloadMapping = {
   getConnections: DatabaseConnection[];
   connectionsUpdated: DatabaseConnection[];
   removeConnection: DatabaseConnection;
+  openDatabaseWindow: DatabaseConnection;
+  getSchemas: { connection: DatabaseConnection };
+  getTables: { connection: DatabaseConnection; schema: string };
+  getVectorColumns: { connection: DatabaseConnection; schema: string; table: string }; // Arguments
+  results: {
+    getSchemas: string[];
+    getTables: string[];
+    getVectorColumns: { column_name: string; has_index: boolean; index_type: string | null }[];
+  };
 };
 
 type DatabaseConnection = {
@@ -56,7 +65,7 @@ interface Window {
       callback: (view: View) => void
     ) => UnsubscribeFunction;
     sendFrameAction: (payload: FrameWindowAction) => void;
-    
+
     send: <Key extends keyof EventPayloadMapping>(
       key: Key,
       payload: EventPayloadMapping[Key]
@@ -66,5 +75,21 @@ interface Window {
       callback: (payload: EventPayloadMapping[Key]) => void
     ) => () => void;
     getConnections: () => Promise<DatabaseConnection[]>;
+    getSchemas: (connection: DatabaseConnection) => Promise<string[]>;
+    getTables: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+    }) => Promise<string[]>;
+    getVectorColumns: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+      table: string;
+    }) => Promise<
+      {
+        column_name: string;
+        has_index: boolean;
+        index_type: string | null;
+      }[]
+    >; 
   };
 }

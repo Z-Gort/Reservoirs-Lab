@@ -85,7 +85,13 @@ function App() {
         />
 
       {/* Connections Grid */}
-      <ConnectionsGrid connections={connections} />
+      <ConnectionsGrid 
+  connections={connections} 
+  onOpenDatabase={(connection) => {
+    console.log("Opening database for connection:", connection);
+    window.electron.send("openDatabaseWindow", connection); // Send event to open a new database window
+  }} 
+/>
 
       {/* Floating Add Button */}
       <Fab

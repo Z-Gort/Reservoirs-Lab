@@ -21,8 +21,7 @@ const Header: React.FC<HeaderProps> = ({
       sx={{
         color: color,
         margin: 0,
-        fontFamily: "'Tahoma', sans-serif",
-
+        fontFamily: "'Libre Caslon Text', serif",
         fontSize: "1.8rem",
       }}
     >
