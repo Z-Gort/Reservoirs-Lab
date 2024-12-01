@@ -47,7 +47,7 @@ export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
   webContents: WebContents,
   payload: EventPayloadMapping[Key]
 ) {
-  console.log("sending", key, payload)
+  //console.log("sending", key, payload)
   webContents.send(key, payload);
 }
 

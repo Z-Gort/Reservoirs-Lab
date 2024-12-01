@@ -22,7 +22,8 @@ electron.contextBridge.exposeInMainWorld("electron", {
     ipcInvokeWithArgs<
       "getSchemas",
       { connection: DatabaseConnection },
-      string[]>("getSchemas", { connection }), // Explicitly define the arguments and result types
+      string[]
+    >("getSchemas", { connection }), // Explicitly define the arguments and result types
 
   getTables: ({
     connection,
@@ -32,12 +33,29 @@ electron.contextBridge.exposeInMainWorld("electron", {
     schema: string;
   }) => ipcInvokeWithArgs("getTables", { connection, schema }),
 
-  getVectorColumns: (args: { connection: DatabaseConnection; schema: string; table: string }) =>
+  getVectorColumns: (args: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+  }) =>
     ipcInvokeWithArgs<
       "getVectorColumns",
       { connection: DatabaseConnection; schema: string; table: string },
       { column_name: string; has_index: boolean; index_type: string | null }[]
     >("getVectorColumns", args),
+
+    getVectorData: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+      table: string;
+      column: string;
+      limit?: number;
+    }) =>
+      ipcInvokeWithArgs<
+        "getVectorData",
+        typeof args,
+        { vector: number[]; metadata: Record<string, any> }[]
+      >("getVectorData", args),    
 } satisfies Window["electron"]);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(

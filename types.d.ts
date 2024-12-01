@@ -38,10 +38,18 @@ type EventPayloadMapping = {
   getSchemas: { connection: DatabaseConnection };
   getTables: { connection: DatabaseConnection; schema: string };
   getVectorColumns: { connection: DatabaseConnection; schema: string; table: string }; // Arguments
+  getVectorData: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+    column: string;
+    limit?: number;
+  };
   results: {
     getSchemas: string[];
     getTables: string[];
     getVectorColumns: { column_name: string; has_index: boolean; index_type: string | null }[];
+    getVectorData: { vector: number[]; metadata: Record<string, any> }[];
   };
 };
 
@@ -91,5 +99,12 @@ interface Window {
         index_type: string | null;
       }[]
     >; 
+    getVectorData: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+      table: string;
+      column: string;
+      limit?: number;
+    }) => Promise<{ vector: number[]; metadata: Record<string, any> }[]>;    
   };
 }
