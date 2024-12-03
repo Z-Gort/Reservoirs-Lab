@@ -44,18 +44,18 @@ electron.contextBridge.exposeInMainWorld("electron", {
       { column_name: string; has_index: boolean; index_type: string | null }[]
     >("getVectorColumns", args),
 
-    getVectorData: (args: {
-      connection: DatabaseConnection;
-      schema: string;
-      table: string;
-      column: string;
-      limit?: number;
-    }) =>
-      ipcInvokeWithArgs<
-        "getVectorData",
-        typeof args,
-        { vector: number[]; metadata: Record<string, any> }[]
-      >("getVectorData", args),    
+  getVectorData: (args: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+    column: string;
+    limit?: number;
+  }) =>
+    ipcInvokeWithArgs<
+      "getVectorData",
+      typeof args,
+      { vector: number[]; metadata: Record<string, any> }[]
+    >("getVectorData", args),
 } satisfies Window["electron"]);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(

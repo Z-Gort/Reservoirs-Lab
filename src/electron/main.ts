@@ -27,6 +27,7 @@ const store = new Store<{ connections: DatabaseConnection[] }>();
 // -------------------
 let popupWindow: BrowserWindow | null = null;
 const databaseWindows = new Map<string, BrowserWindow>();
+let dbWindow: BrowserWindow | null = null;
 
 // -------------------
 // Main Electron App Logic
@@ -79,6 +80,7 @@ function createDatabaseWindow(
   const dbWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    frame: false,
     webPreferences: { preload: getPreloadPath(), contextIsolation: true },
   });
 
@@ -97,6 +99,8 @@ function createDatabaseWindow(
     databaseWindows.delete(connection.database);
     if (databaseWindows.size === 0) mainWindow?.show();
   });
+
+  dbWindow.webContents.openDevTools();
 
   return dbWindow;
 }
@@ -131,7 +135,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
   ipcMainHandle("getStaticData", getStaticData);
 
   ipcMainOn("sendFrameAction", (payload) => {
-    handleFrameAction(mainWindow, payload);
+    handleFrameAction(dbWindow!, payload);
   });
 
   ipcMainOn("openPopup", () => {
@@ -151,7 +155,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
   });
 
   ipcMainOn("openDatabaseWindow", (connection: DatabaseConnection) => {
-    openDatabaseWindow(mainWindow, connection);
+    dbWindow = openDatabaseWindow(mainWindow, connection);
   });
 
   ipcMainHandleWithArgs(
@@ -316,17 +320,24 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
   // -------------------
   // Helper Functions
   // -------------------
-  function handleFrameAction(mainWindow: BrowserWindow, payload: string) {
+  function handleFrameAction(window: BrowserWindow, payload: string) {
     switch (payload) {
       case "CLOSE":
-        mainWindow.close();
+        window.close();
         break;
       case "MAXIMIZE":
-        mainWindow.maximize();
+        // Toggle maximize and restore
+        if (window.isMaximized()) {
+          window.unmaximize();
+        } else {
+          window.maximize();
+        }
         break;
       case "MINIMIZE":
-        mainWindow.minimize();
+        window.minimize();
         break;
+      default:
+        console.warn(`Unknown frame action: ${payload}`);
     }
   }
 
@@ -461,6 +472,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     const existingWindow = databaseWindows.get(connection.database);
     if (existingWindow) {
       existingWindow.focus();
+    return existingWindow
     } else {
       const dbWindow = createDatabaseWindow(connection, mainWindow);
       databaseWindows.set(connection.database, dbWindow);
@@ -468,36 +480,8 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         databaseWindows.delete(connection.database);
         if (databaseWindows.size === 0) mainWindow.show();
       });
+      return dbWindow
     }
   }
 
-  async function fetchVectorsFromDatabase(
-    connection: DatabaseConnection,
-    schema: string,
-    table: string,
-    column: string,
-    limit: number = 1000
-  ): Promise<number[][]> {
-    const clientConfig = {
-      ...connection,
-      port: parseInt(connection.port, 10),
-    };
-    const client = new Client(clientConfig);
-    await client.connect();
-
-    try {
-      const query = `
-      SELECT ${column}
-      FROM ${schema}.${table}
-      LIMIT $1
-    `;
-      const res = await client.query(query, [limit]);
-      return res.rows.map((row) => row[column]);
-    } catch (error) {
-      console.error("Error fetching vectors:", error);
-      throw error; // Forward the error
-    } finally {
-      client.end();
-    }
-  }
 }

@@ -41,6 +41,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     document.addEventListener("mouseup", handleMouseUp);
   };
 
+  const formatMetadataValue = (value: any): string => {
+    if (typeof value === "object" && value !== null) {
+      // Convert objects/arrays to a JSON string
+      return JSON.stringify(value, null, 2);
+    }
+    // Handle other types (string, number, boolean, etc.)
+    return value.toString();
+  };
+
   return (
     <Box
       sx={{
@@ -74,7 +83,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 <ul>
                   {Object.entries(hoveredMetadata).map(([key, value]) => (
                     <li key={key}>
-                      <strong>{key}:</strong> {value.toString()}
+                      <strong>{key}:</strong> {formatMetadataValue(value)}
                     </li>
                   ))}
                 </ul>
