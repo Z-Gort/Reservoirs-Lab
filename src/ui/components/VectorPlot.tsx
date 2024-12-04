@@ -6,8 +6,10 @@ const VectorPlot: React.FC<{
   schema: string;
   table: string;
   column: string;
+  pointCount: number;
+  refreshTrigger: boolean;
   onHoverChange: (metadata: Record<string, any> | null) => void;
-}> = ({ connection, schema, table, column, onHoverChange }) => {
+}> = ({ connection, schema, table, column, onHoverChange, pointCount, refreshTrigger }) => {
   const [parsedVectors, setParsedVectors] = useState<
     { vector: number[]; metadata: Record<string, any> }[]
   >([]);
@@ -23,6 +25,7 @@ const VectorPlot: React.FC<{
           schema,
           table,
           column,
+          limit: pointCount,
         });
         const parsed = data.map(
           (item: { vector: number[]; metadata: any }) => ({
@@ -39,7 +42,7 @@ const VectorPlot: React.FC<{
     };
 
     fetchData();
-  }, [connection, schema, table, column]);
+  }, [connection, schema, table, column, pointCount, refreshTrigger]);
 
   const handleHover = useCallback(
     (event: any) => {
@@ -97,6 +100,7 @@ const VectorPlot: React.FC<{
           schema,
           table,
           column,
+          limit: pointCount,
           selectedID: selectedID, // Pass the selected vector as the centerPoint
         });
 

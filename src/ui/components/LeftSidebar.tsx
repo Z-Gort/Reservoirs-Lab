@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Box } from "@mui/material";
 import ResizableZone from "./ResizableZone";
 import SchemaAndTableSelector from "./SchemaAndTableSelector";
+import BottomContent from "./BottomContent";
 
 interface LeftSidebarProps {
   connection: DatabaseConnection;
@@ -12,6 +13,7 @@ interface LeftSidebarProps {
   selectedColumn: string | null;
   setSelectedColumn: React.Dispatch<React.SetStateAction<string | null>>;
   hoveredMetadata: Record<string, any> | null; // New prop
+  onRefresh: (pointCount: number) => void;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -23,6 +25,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   selectedColumn,
   setSelectedColumn,
   hoveredMetadata,
+  onRefresh,
 }) => {
   const [sidebarWidth, setSidebarWidth] = useState(300);
 
@@ -94,11 +97,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </Box>
         }
         bottomContent={
-          <Box sx={{ padding: "10px", flex: 1, overflowY: "auto", backgroundColor: "#f5f5f5" }}>
-            {/* You can reserve this area for additional insights or actions */}
-            <h3>Insights</h3>
-            <p>Additional content can go here.</p>
-          </Box>
+          <BottomContent onRefresh={onRefresh} /> // Pass the onRefresh prop to BottomContent
         }
       />
 

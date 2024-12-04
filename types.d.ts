@@ -48,7 +48,7 @@ type EventPayloadMapping = {
     table: string;
     column: string;
     selectedID?: string;
-    limit?: number;
+    limit: number;
   };
   results: {
     getSchemas: string[];
@@ -114,7 +114,7 @@ interface Window {
       table: string;
       column: string;
       selectedID?: string;
-      limit?: number;
+      limit: number;
     }) => Promise<{ vector: number[]; metadata: Record<string, any> }[]>;
   };
 }

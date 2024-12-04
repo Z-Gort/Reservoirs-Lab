@@ -9,6 +9,14 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   const [hoveredMetadata, setHoveredMetadata] = useState<Record<string, any> | null>(null);
+  const [pointCount, setPointCount] = useState<number>(100);
+  const [refreshTrigger, setRefreshTrigger] = useState<boolean>(false); // Add refresh trigger state
+
+  const handleRefresh = (newPointCount: number) => {
+    setPointCount(newPointCount); // Update the point count
+    setRefreshTrigger((prev) => !prev); // Toggle the refresh trigger
+    console.log(`Refreshing graph with ${newPointCount} points`);
+  };
 
   return (
     <Box
@@ -31,7 +39,8 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
           setSelectedTable={setSelectedTable}
           selectedColumn={selectedColumn}
           setSelectedColumn={setSelectedColumn}
-          hoveredMetadata={hoveredMetadata} // Pass hovered metadata
+          hoveredMetadata={hoveredMetadata}
+          onRefresh={handleRefresh}
         />
 
         {/* Plot Area */}
@@ -50,7 +59,9 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
               schema={selectedSchema}
               table={selectedTable}
               column={selectedColumn}
-              onHoverChange={setHoveredMetadata} // Pass setter for hovered metadata
+              onHoverChange={setHoveredMetadata}
+              pointCount={pointCount}
+              refreshTrigger={refreshTrigger}
             />
           ) : (
             <div>Please select a schema, table, and column to display the plot.</div>

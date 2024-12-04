@@ -50,7 +50,7 @@ electron.contextBridge.exposeInMainWorld("electron", {
     table: string;
     column: string;
     selectedID?: string;
-    limit?: number;
+    limit: number;
   }) =>
     ipcInvokeWithArgs<
       "getVectorData",

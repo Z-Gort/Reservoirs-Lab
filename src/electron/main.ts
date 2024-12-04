@@ -191,10 +191,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
 
   ipcMainHandleWithArgs(
     "getVectorData",
-    async (
-      event,
-      { connection, schema, table, column, selectedID: selectedID }
-    ) => {
+    async (event, { connection, schema, table, column, limit, selectedID }) => {
       const clientConfig = {
         ...connection,
         port: parseInt(connection.port, 10),
@@ -207,7 +204,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
 
         // Fetch the high-dimensional vector if selectedID is provided
         if (selectedID) {
-          console.log("PASSED IN SELECTEDID", selectedID)
+          console.log("PASSED IN SELECTEDID", selectedID);
           const centerQuery = `
           SELECT ${column} 
           FROM ${schema}.${table} 
@@ -222,20 +219,16 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
             throw new Error(`No vector found for selectedID: ${selectedID}`);
           }
         }
-        const query = `
-          SELECT ${column}, * -- Replace * with specific columns if you know what to fetch
-          FROM ${schema}.${table}
-          LIMIT 5000; -- Fetch 5000 rows
-        `;
-        const res = await client.query(query);
 
-        const vectorsWithMetadata = res.rows.map((row) => {
+        const rows = await getRandomRows(client, schema, table, column, limit);
+
+        // Step 3: Extract vectors and metadata
+        const vectorsWithMetadata = rows.map((row) => {
           const vector = row[column];
           const metadata = { ...row };
           delete metadata[column];
           return { vector, metadata };
         });
-
         const vectors = vectorsWithMetadata.map((item) => item.vector);
         let reducedVectors;
         console.log("CENTERPOINT??", centerPoint);
@@ -282,20 +275,23 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
       console.log("RECEIVED CENTERPOINT", centerPoint);
       console.log("TYPE OF CENTERPOINT:", typeof centerPoint);
       console.log("IS ARRAY (before parsing):", Array.isArray(centerPoint));
-  
+
       // Parse centerPoint if it is provided
       let parsedCenterPoint: number[] | undefined;
       if (centerPoint) {
         try {
           parsedCenterPoint = JSON.parse(centerPoint);
           console.log("PARSED CENTERPOINT:", parsedCenterPoint);
-          console.log("IS ARRAY (after parsing):", Array.isArray(parsedCenterPoint));
+          console.log(
+            "IS ARRAY (after parsing):",
+            Array.isArray(parsedCenterPoint)
+          );
         } catch (error) {
           console.error("Failed to parse centerPoint:", centerPoint, error);
           throw new Error("Invalid centerPoint format");
         }
       }
-  
+
       const parsedVectors = vectors.map((vectorString) =>
         JSON.parse(vectorString)
       );
@@ -305,36 +301,36 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
             "src/electron/scripts/reduceDimensionWithCenter.py"
           )
         : path.join(process.cwd(), "src/electron/scripts/reduceDimension.py");
-  
+
       const serializedVectors = parsedVectors
         .map((row) => row.join(","))
         .join(";");
-  
+
       const tempFilePath = join(tmpdir(), `vectors_${Date.now()}.txt`);
       writeFileSync(tempFilePath, serializedVectors);
-  
+
       const args = [tempFilePath]; // Common argument for all scripts
-  
+
       if (parsedCenterPoint) {
         const serializedCenterPoint = parsedCenterPoint.join(",");
         args.push(serializedCenterPoint);
       }
-  
+
       console.log("CENTER: ", parsedCenterPoint);
       console.log("ABOUT TO RUN SCRIPT: ", scriptPath);
-  
+
       const results = await new Promise<number[][]>((resolve, reject) => {
         const shell = new PythonShell(scriptPath, {
           args: args,
           pythonPath: "./venv/bin/python3",
           pythonOptions: ["-u"],
         });
-  
+
         const output: number[][] = [];
         shell.on("message", (message) => {
           output.push(...JSON.parse(message));
         });
-  
+
         shell.end((err) => {
           if (err) {
             reject(err);
@@ -343,17 +339,17 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
           }
         });
       });
-  
+
       if (!results || results.length === 0) {
         throw new Error("No results returned from the Python script.");
       }
-  
+
       return results; // Return the 2D embeddings
     } catch (err) {
       console.error("Error running dimensionality reduction:", err);
       throw err;
     }
-  }  
+  }
 
   // -------------------
   // Helper Functions
@@ -522,3 +518,39 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     }
   }
 }
+
+const getRandomRows = async (
+  client: pg.Client,
+  schema: string,
+  table: string,
+  column: string,
+  limit: number,
+) =>  {
+  // Step 1: Get total row count in the table
+  const countQuery = `SELECT COUNT(*) AS total_rows FROM ${schema}.${table};`;
+  const countRes = await client.query(countQuery);
+  const totalRows = countRes.rows[0].total_rows;
+  const oversampleFactor = 1.5;
+
+  if (totalRows === 0) {
+    throw new Error("The table is empty. No rows to sample.");
+  }
+
+  // Step 2: Calculate oversampling percentage
+  const oversamplePercentage = Math.min((limit * oversampleFactor / totalRows) * 100, 100);
+
+  // Step 3: Use TABLESAMPLE BERNOULLI to oversample rows
+  const sampleQuery = `
+    WITH sampled_rows AS (
+      SELECT ${column}, * -- Replace * with specific columns if necessary
+      FROM ${schema}.${table}
+      TABLESAMPLE BERNOULLI(${oversamplePercentage})
+    )
+    SELECT *
+    FROM sampled_rows
+    LIMIT $1; -- Ensure exact limit
+  `;
+  const sampleRes = await client.query(sampleQuery, [limit]);
+
+  return sampleRes.rows; // Return the sampled rows
+};
