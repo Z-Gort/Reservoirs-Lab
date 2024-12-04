@@ -80,7 +80,6 @@ function createDatabaseWindow(
   const dbWindow = new BrowserWindow({
     width: 1000,
     height: 700,
-    frame: false,
     webPreferences: { preload: getPreloadPath(), contextIsolation: true },
   });
 
@@ -100,7 +99,7 @@ function createDatabaseWindow(
     if (databaseWindows.size === 0) mainWindow?.show();
   });
 
-  dbWindow.webContents.openDevTools();
+  dbWindow.webContents.openDevTools({ mode: "detach" }); // Use 'detach' to open DevTools in a separate window
 
   return dbWindow;
 }
@@ -194,17 +193,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     "getVectorData",
     async (
       event,
-      {
-        connection,
-        schema,
-        table,
-        column,
-      }: {
-        connection: DatabaseConnection;
-        schema: string;
-        table: string;
-        column: string;
-      }
+      { connection, schema, table, column, selectedID: selectedID }
     ) => {
       const clientConfig = {
         ...connection,
@@ -212,47 +201,66 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
       };
       const client = new Client(clientConfig);
       await client.connect();
-  
+
       try {
-        // Modify the query to fetch the desired metadata along with the vector column
+        let centerPoint: string | undefined;
+
+        // Fetch the high-dimensional vector if selectedID is provided
+        if (selectedID) {
+          console.log("PASSED IN SELECTEDID", selectedID)
+          const centerQuery = `
+          SELECT ${column} 
+          FROM ${schema}.${table} 
+          WHERE id = $1; -- Assuming 'id' is the primary key
+        `;
+
+          const centerRes = await client.query(centerQuery, [selectedID]);
+
+          if (centerRes.rows.length > 0) {
+            centerPoint = centerRes.rows[0][column];
+          } else {
+            throw new Error(`No vector found for selectedID: ${selectedID}`);
+          }
+        }
         const query = `
           SELECT ${column}, * -- Replace * with specific columns if you know what to fetch
           FROM ${schema}.${table}
           LIMIT 5000; -- Fetch 5000 rows
         `;
         const res = await client.query(query);
-  
-        // Map each row to include both the vector and metadata
+
         const vectorsWithMetadata = res.rows.map((row) => {
-          const vector = row[column]; // Extract vector
-          const metadata = { ...row }; // Extract all other row data as metadata
-          delete metadata[column]; // Remove the vector from metadata
+          const vector = row[column];
+          const metadata = { ...row };
+          delete metadata[column];
           return { vector, metadata };
         });
-  
-        console.log(
-          "GOTTEN VECTORS WITH METADATA:",
-          JSON.stringify(vectorsWithMetadata).substring(0, 5000) + "..."
-        );
-  
-        // Extract vectors for dimensionality reduction
+
         const vectors = vectorsWithMetadata.map((item) => item.vector);
-  
-        // Run dimensionality reduction
-        const reducedVectors = await runDimensionalityReduction(vectors);
-  
+        let reducedVectors;
+        console.log("CENTERPOINT??", centerPoint);
+        if (selectedID) {
+          // Run dimensionality reduction with weighting based on centerPoint
+          console.log("RUNNING DIMENSIONALITY REDUCTION WITH CENTER POINT");
+          reducedVectors = await runDimensionalityReduction(
+            vectors,
+            centerPoint
+          );
+        } else {
+          // Run dimensionality reduction normally
+          reducedVectors = await runDimensionalityReduction(vectors);
+        }
+
         console.log(
-          "REDUCED VECTORS:",
-          JSON.stringify(reducedVectors).substring(0, 500) + "..."
+          "REDUCED VECTORS: ",
+          JSON.stringify(reducedVectors).slice(0, 50)
         );
-  
-        // Combine reduced vectors with metadata
         const results = reducedVectors.map((vector, index) => ({
           vector,
           metadata: vectorsWithMetadata[index].metadata,
         }));
-  
-        return results; // Return combined [x, y] points and metadata
+
+        return results;
       } catch (error) {
         console.error("Error fetching vector data:", error);
         throw error;
@@ -260,43 +268,73 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         client.end();
       }
     }
-  );  
+  );
 
   // Python helper function for dimensionality reduction
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
   async function runDimensionalityReduction(
-    vectors: string[]
+    vectors: string[],
+    centerPoint?: string // Assume it's a JSON string
   ): Promise<number[][]> {
     try {
+      console.log("RECEIVED CENTERPOINT", centerPoint);
+      console.log("TYPE OF CENTERPOINT:", typeof centerPoint);
+      console.log("IS ARRAY (before parsing):", Array.isArray(centerPoint));
+  
+      // Parse centerPoint if it is provided
+      let parsedCenterPoint: number[] | undefined;
+      if (centerPoint) {
+        try {
+          parsedCenterPoint = JSON.parse(centerPoint);
+          console.log("PARSED CENTERPOINT:", parsedCenterPoint);
+          console.log("IS ARRAY (after parsing):", Array.isArray(parsedCenterPoint));
+        } catch (error) {
+          console.error("Failed to parse centerPoint:", centerPoint, error);
+          throw new Error("Invalid centerPoint format");
+        }
+      }
+  
       const parsedVectors = vectors.map((vectorString) =>
         JSON.parse(vectorString)
       );
-      const scriptPath = path.join(
-        process.cwd(),
-        "src/electron/scripts/reduceDimension.py"
-      );
-
+      const scriptPath = parsedCenterPoint
+        ? path.join(
+            process.cwd(),
+            "src/electron/scripts/reduceDimensionWithCenter.py"
+          )
+        : path.join(process.cwd(), "src/electron/scripts/reduceDimension.py");
+  
       const serializedVectors = parsedVectors
         .map((row) => row.join(","))
         .join(";");
-
+  
       const tempFilePath = join(tmpdir(), `vectors_${Date.now()}.txt`);
       writeFileSync(tempFilePath, serializedVectors);
-
+  
+      const args = [tempFilePath]; // Common argument for all scripts
+  
+      if (parsedCenterPoint) {
+        const serializedCenterPoint = parsedCenterPoint.join(",");
+        args.push(serializedCenterPoint);
+      }
+  
+      console.log("CENTER: ", parsedCenterPoint);
+      console.log("ABOUT TO RUN SCRIPT: ", scriptPath);
+  
       const results = await new Promise<number[][]>((resolve, reject) => {
         const shell = new PythonShell(scriptPath, {
-          args: [tempFilePath],
-          pythonPath: "./venv/bin/python3", 
-          pythonOptions: ["-u"], 
+          args: args,
+          pythonPath: "./venv/bin/python3",
+          pythonOptions: ["-u"],
         });
-
+  
         const output: number[][] = [];
         shell.on("message", (message) => {
           output.push(...JSON.parse(message));
         });
-
+  
         shell.end((err) => {
           if (err) {
             reject(err);
@@ -305,17 +343,17 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
           }
         });
       });
-
+  
       if (!results || results.length === 0) {
         throw new Error("No results returned from the Python script.");
       }
-
+  
       return results; // Return the 2D embeddings
     } catch (err) {
       console.error("Error running dimensionality reduction:", err);
       throw err;
     }
-  }
+  }  
 
   // -------------------
   // Helper Functions
@@ -472,7 +510,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     const existingWindow = databaseWindows.get(connection.database);
     if (existingWindow) {
       existingWindow.focus();
-    return existingWindow
+      return existingWindow;
     } else {
       const dbWindow = createDatabaseWindow(connection, mainWindow);
       databaseWindows.set(connection.database, dbWindow);
@@ -480,8 +518,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         databaseWindows.delete(connection.database);
         if (databaseWindows.size === 0) mainWindow.show();
       });
-      return dbWindow
+      return dbWindow;
     }
   }
-
 }

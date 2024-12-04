@@ -49,6 +49,7 @@ electron.contextBridge.exposeInMainWorld("electron", {
     schema: string;
     table: string;
     column: string;
+    selectedID?: string;
     limit?: number;
   }) =>
     ipcInvokeWithArgs<

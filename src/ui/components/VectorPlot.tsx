@@ -6,12 +6,13 @@ const VectorPlot: React.FC<{
   schema: string;
   table: string;
   column: string;
-  onHoverChange: (metadata: Record<string, any> | null) => void; // New prop
+  onHoverChange: (metadata: Record<string, any> | null) => void;
 }> = ({ connection, schema, table, column, onHoverChange }) => {
   const [parsedVectors, setParsedVectors] = useState<
     { vector: number[]; metadata: Record<string, any> }[]
   >([]);
   const [vectors, setVectors] = useState<number[][]>([]);
+  const [annotations, setAnnotations] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,12 +24,14 @@ const VectorPlot: React.FC<{
           table,
           column,
         });
-        const parsed = data.map((item: { vector: number[]; metadata: any }) => ({
-          vector: item.vector,
-          metadata: item.metadata,
-        }));
-        setParsedVectors(parsed); // Store full parsed data
-        setVectors(parsed.map((item) => item.vector)); // Store only vectors
+        const parsed = data.map(
+          (item: { vector: number[]; metadata: any }) => ({
+            vector: item.vector,
+            metadata: item.metadata,
+          })
+        );
+        setParsedVectors(parsed);
+        setVectors(parsed.map((item) => item.vector));
       } catch (err) {
         console.error("Error fetching vector data:", err);
         setError("Failed to fetch vector data.");
@@ -38,19 +41,84 @@ const VectorPlot: React.FC<{
     fetchData();
   }, [connection, schema, table, column]);
 
-  // Memoize hover handlers to prevent re-renders
   const handleHover = useCallback(
     (event: any) => {
       const pointIndex = event.points[0].pointIndex;
-      const metadata = parsedVectors[pointIndex]?.metadata || null; // Use parsedVectors
-      onHoverChange(metadata); // Pass metadata to parent
+      const x = event.points[0].x;
+      const y = event.points[0].y;
+      const metadata = parsedVectors[pointIndex]?.metadata || null;
+
+      if (isNaN(x) || isNaN(y) || x === undefined || y === undefined) {
+        console.error("Invalid x or y value for hover:", { x, y });
+        return;
+      }
+
+      onHoverChange(metadata);
+      const newAnnotation = {
+        x,
+        y,
+        text: "Click on point to see insights",
+        showarrow: true,
+        arrowhead: 2,
+        ax: 0,
+        ay: -30,
+        font: {
+          size: 12,
+          color: "white",
+        },
+        align: "center",
+        bgcolor: "black",
+        bordercolor: "white",
+      };
+
+      setAnnotations([newAnnotation]);
     },
     [parsedVectors, onHoverChange]
   );
 
   const handleUnhover = useCallback(() => {
-    onHoverChange(null); // Clear hover state
+    onHoverChange(null);
+    setAnnotations([]);
   }, [onHoverChange]);
+
+  const handleClick = useCallback(
+    async (event: any) => {
+      const pointIndex = event.points[0].pointIndex; // Get clicked point's index
+      const selectedID = parsedVectors[pointIndex]?.metadata.id; // Retrieve the clicked vector
+      if (!selectedID) return;
+
+      try {
+        // Fetch data again, passing in the selected vector as the centerPoint
+
+        console.log("TRYING TO FETCH UPDATED VECTORS");
+        console.log("ID: ", selectedID);
+        const data = await window.electron.getVectorData({
+          connection,
+          schema,
+          table,
+          column,
+          selectedID: selectedID, // Pass the selected vector as the centerPoint
+        });
+
+        const parsed = data.map(
+          (item: { vector: number[]; metadata: any }) => ({
+            vector: item.vector,
+            metadata: item.metadata,
+          })
+        );
+        setParsedVectors(parsed); // Update parsed vectors
+        setVectors(parsed.map((item) => item.vector)); // Update vector positions
+        console.log("VECTORS SET");
+
+        // Optionally clear annotations or update with new insights
+        setAnnotations([]);
+      } catch (err) {
+        console.error("Error refetching vector data:", err);
+        setError("Failed to refetch vector data.");
+      }
+    },
+    [parsedVectors, connection, schema, table, column]
+  );
 
   if (error) return <div>{error}</div>;
 
@@ -70,7 +138,7 @@ const VectorPlot: React.FC<{
             color: "blue",
             opacity: 0.8,
           },
-          hoverinfo: "none", // Disable hover info on the plot
+          hoverinfo: "none",
         },
       ]}
       layout={{
@@ -78,13 +146,15 @@ const VectorPlot: React.FC<{
         xaxis: { title: "X-Axis", zeroline: false },
         yaxis: { title: "Y-Axis", zeroline: false },
         showlegend: false,
+        annotations,
       }}
       config={{
         displaylogo: false,
-        scrollZoom: true, // Enable scroll zoom for better UX
+        scrollZoom: true,
       }}
-      onHover={handleHover} // Use memoized hover handler
-      onUnhover={handleUnhover} // Use memoized unhover handler
+      onHover={handleHover}
+      onUnhover={handleUnhover}
+      onClick={handleClick}
     />
   );
 };

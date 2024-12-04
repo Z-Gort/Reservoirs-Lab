@@ -37,18 +37,27 @@ type EventPayloadMapping = {
   openDatabaseWindow: DatabaseConnection;
   getSchemas: { connection: DatabaseConnection };
   getTables: { connection: DatabaseConnection; schema: string };
-  getVectorColumns: { connection: DatabaseConnection; schema: string; table: string }; // Arguments
+  getVectorColumns: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+  }; // Arguments
   getVectorData: {
     connection: DatabaseConnection;
     schema: string;
     table: string;
     column: string;
+    selectedID?: string;
     limit?: number;
   };
   results: {
     getSchemas: string[];
     getTables: string[];
-    getVectorColumns: { column_name: string; has_index: boolean; index_type: string | null }[];
+    getVectorColumns: {
+      column_name: string;
+      has_index: boolean;
+      index_type: string | null;
+    }[];
     getVectorData: { vector: number[]; metadata: Record<string, any> }[];
   };
 };
@@ -98,13 +107,14 @@ interface Window {
         has_index: boolean;
         index_type: string | null;
       }[]
-    >; 
+    >;
     getVectorData: (args: {
       connection: DatabaseConnection;
       schema: string;
       table: string;
       column: string;
+      selectedID?: string;
       limit?: number;
-    }) => Promise<{ vector: number[]; metadata: Record<string, any> }[]>;    
+    }) => Promise<{ vector: number[]; metadata: Record<string, any> }[]>;
   };
 }

@@ -20,8 +20,6 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
         overflow: "hidden",
       }}
     >
-      {/* Header */}
-      <Frame />
       {/* Main Content */}
       <Box sx={{ display: "flex", flex: 1 }}>
         {/* Left Sidebar */}
