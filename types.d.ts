@@ -41,7 +41,7 @@ type EventPayloadMapping = {
     connection: DatabaseConnection;
     schema: string;
     table: string;
-  }; // Arguments
+  };
   getVectorData: {
     connection: DatabaseConnection;
     schema: string;
@@ -50,7 +50,16 @@ type EventPayloadMapping = {
     selectedID?: string;
     limit: number;
   };
+  getTopCorrelations: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+    column: string;
+    selectedID: string;
+    rowIDs: string[];
+  };
   results: {
+    getTopCorrelations: { column: string; correlation: number; pValue: number }[];
     getSchemas: string[];
     getTables: string[];
     getVectorColumns: {
@@ -116,5 +125,13 @@ interface Window {
       selectedID?: string;
       limit: number;
     }) => Promise<{ vector: number[]; metadata: Record<string, any> }[]>;
+    getTopCorrelations: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+      table: string;
+      column: string;
+      selectedID: string;
+      rowIDs: string[];
+    }) => Promise<{ column: string; correlation: number; pValue: number }[]>;
   };
 }

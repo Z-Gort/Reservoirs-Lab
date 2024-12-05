@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["./types"],
+    "types": ["./types", ],
     "allowImportingTsExtensions": true, //to fix "can't import path ends with .tsx" issue
     "target": "ESNext",
     "useDefineForClassFields": true,

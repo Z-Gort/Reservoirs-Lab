@@ -18,6 +18,8 @@ import { fileURLToPath } from "url";
 import { writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+// @ts-ignore
+import jstat from "jstat";
 
 const { Client } = pg;
 const store = new Store<{ connections: DatabaseConnection[] }>();
@@ -200,7 +202,9 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
       await client.connect();
 
       try {
-        let centerPoint: string | undefined;
+      let centerPoint: string | undefined;
+
+      const uuidColumn = await getUuidColumn(client, schema, table);
 
         // Fetch the high-dimensional vector if selectedID is provided
         if (selectedID) {
@@ -208,7 +212,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
           const centerQuery = `
           SELECT ${column} 
           FROM ${schema}.${table} 
-          WHERE id = $1; -- Assuming 'id' is the primary key
+          WHERE ${uuidColumn} = $1; -- Assuming 'id' is the primary key
         `;
 
           const centerRes = await client.query(centerQuery, [selectedID]);
@@ -231,7 +235,6 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         });
         const vectors = vectorsWithMetadata.map((item) => item.vector);
         let reducedVectors;
-        console.log("CENTERPOINT??", centerPoint);
         if (selectedID) {
           // Run dimensionality reduction with weighting based on centerPoint
           console.log("RUNNING DIMENSIONALITY REDUCTION WITH CENTER POINT");
@@ -272,20 +275,11 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     centerPoint?: string // Assume it's a JSON string
   ): Promise<number[][]> {
     try {
-      console.log("RECEIVED CENTERPOINT", centerPoint);
-      console.log("TYPE OF CENTERPOINT:", typeof centerPoint);
-      console.log("IS ARRAY (before parsing):", Array.isArray(centerPoint));
-
       // Parse centerPoint if it is provided
       let parsedCenterPoint: number[] | undefined;
       if (centerPoint) {
         try {
           parsedCenterPoint = JSON.parse(centerPoint);
-          console.log("PARSED CENTERPOINT:", parsedCenterPoint);
-          console.log(
-            "IS ARRAY (after parsing):",
-            Array.isArray(parsedCenterPoint)
-          );
         } catch (error) {
           console.error("Failed to parse centerPoint:", centerPoint, error);
           throw new Error("Invalid centerPoint format");
@@ -316,7 +310,6 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         args.push(serializedCenterPoint);
       }
 
-      console.log("CENTER: ", parsedCenterPoint);
       console.log("ABOUT TO RUN SCRIPT: ", scriptPath);
 
       const results = await new Promise<number[][]>((resolve, reject) => {
@@ -350,6 +343,82 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
       throw err;
     }
   }
+
+  ipcMainHandleWithArgs(
+    "getTopCorrelations",
+    async (
+      event,
+      {
+        connection,
+        schema,
+        table,
+        column,
+        selectedID,
+        rowIDs, // Array of row IDs currently displayed in the plot
+      }: {
+        connection: DatabaseConnection;
+        schema: string;
+        table: string;
+        column: string;
+        selectedID: string;
+        rowIDs: string[];
+      }
+    ) => {
+      const clientConfig = {
+        ...connection,
+        port: parseInt(connection.port, 10),
+      };
+      const client = new Client(clientConfig);
+      await client.connect();
+      const uuidColumn = await getUuidColumn(client, schema, table);
+      try {
+        // Step 1: Fetch the selected vector
+        const vectorQuery = `
+          SELECT ${column}
+          FROM ${schema}.${table}
+          WHERE ${uuidColumn} = $1;
+        `;
+        const vectorRes = await client.query(vectorQuery, [selectedID]);
+        if (vectorRes.rows.length === 0) {
+          throw new Error(`No vector found for selectedID: ${selectedID}`);
+        }
+        let selectedVector = vectorRes.rows[0][column];
+        selectedVector = JSON.parse(selectedVector);
+
+        // Step 2: Fetch vectors and metadata for provided rowIDs
+        const subsetQuery = `
+          SELECT id, ${column}, * -- Replace * with specific columns if necessary
+          FROM ${schema}.${table}
+          WHERE ${uuidColumn} = ANY($1::uuid[]);
+        `;
+        const subsetRes = await client.query(subsetQuery, [rowIDs]);
+        const vectorsWithMetadata = subsetRes.rows.map((row) => {
+          const vector = row[column];
+          const metadata = { ...row };
+          delete metadata[column];
+          return { vector, metadata };
+        });
+
+        // Step 3: Compute cosine similarities for the subset
+        const cosineSimilarities = vectorsWithMetadata.map(({ vector }) => {
+          vector = JSON.parse(vector);
+          return computeCosineSimilarity(selectedVector, vector);
+        });
+
+        const topCorrelations = computeCorrelations(
+          vectorsWithMetadata,
+          cosineSimilarities
+        );
+        console.log("TOP CORRELATIONS: ", topCorrelations);
+        return topCorrelations;
+      } catch (error) {
+        console.error("Error fetching top correlations:", error);
+        throw error;
+      } finally {
+        client.end();
+      }
+    }
+  );
 
   // -------------------
   // Helper Functions
@@ -524,8 +593,8 @@ const getRandomRows = async (
   schema: string,
   table: string,
   column: string,
-  limit: number,
-) =>  {
+  limit: number
+) => {
   // Step 1: Get total row count in the table
   const countQuery = `SELECT COUNT(*) AS total_rows FROM ${schema}.${table};`;
   const countRes = await client.query(countQuery);
@@ -537,7 +606,10 @@ const getRandomRows = async (
   }
 
   // Step 2: Calculate oversampling percentage
-  const oversamplePercentage = Math.min((limit * oversampleFactor / totalRows) * 100, 100);
+  const oversamplePercentage = Math.min(
+    ((limit * oversampleFactor) / totalRows) * 100,
+    100
+  );
 
   // Step 3: Use TABLESAMPLE BERNOULLI to oversample rows
   const sampleQuery = `
@@ -553,4 +625,146 @@ const getRandomRows = async (
   const sampleRes = await client.query(sampleQuery, [limit]);
 
   return sampleRes.rows; // Return the sampled rows
+};
+
+function computeCosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) {
+    throw new Error("Vectors must have the same length");
+  }
+
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const magnitudeA = Math.sqrt(vecA.reduce((sum, a) => sum + a ** 2, 0));
+  const magnitudeB = Math.sqrt(vecB.reduce((sum, b) => sum + b ** 2, 0));
+
+  if (magnitudeA === 0 || magnitudeB === 0) {
+    return 0; // Handle zero-magnitude vectors
+  }
+
+  return dotProduct / (magnitudeA * magnitudeB);
+}
+
+function computePearsonCorrelation(x: number[], y: number[]): number {
+  if (x.length !== y.length) {
+    throw new Error("Arrays must have the same length");
+  }
+
+  const n = x.length;
+  const meanX = x.reduce((sum, xi) => sum + xi, 0) / n;
+  const meanY = y.reduce((sum, yi) => sum + yi, 0) / n;
+
+  const numerator = x.reduce(
+    (sum, xi, i) => sum + (xi - meanX) * (y[i] - meanY),
+    0
+  );
+  const denominator = Math.sqrt(
+    x.reduce((sum, xi) => sum + (xi - meanX) ** 2, 0) *
+      y.reduce((sum, yi) => sum + (yi - meanY) ** 2, 0)
+  );
+
+  if (denominator === 0) {
+    return 0; // Handle cases where the data has no variability
+  }
+
+  return numerator / denominator;
+}
+
+const computeCorrelations = (
+  vectorsWithMetadata: { vector: number[]; metadata: Record<string, any> }[],
+  cosineSimilarities: number[]
+) => {
+  const correlations: {
+    column: string;
+    correlation: number;
+    pValue: number;
+  }[] = [];
+  const metadataKeys = Object.keys(vectorsWithMetadata[0].metadata);
+
+  for (const key of metadataKeys) {
+    const values = vectorsWithMetadata.map(({ metadata }) => metadata[key]);
+
+    // Check if the column is numeric or convertible to numeric
+    const isColumnNumeric = values.every(
+      (v) =>
+        typeof v === "number" ||
+        (!isNaN(parseFloat(v as string)) && typeof v === "string")
+    );
+
+    if (isColumnNumeric) {
+      // Convert all values to numbers (if needed)
+      const numericValues = values.map((v) =>
+        typeof v === "number" ? v : parseFloat(v as string)
+      );
+
+      // Compute the correlation
+      const correlation = computePearsonCorrelation(
+        cosineSimilarities,
+        numericValues
+      );
+
+      // Compute the p-value
+      const n = numericValues.length; // Number of samples
+      const tStatistic =
+        correlation * Math.sqrt((n - 2) / (1 - correlation ** 2));
+      const degreesOfFreedom = n - 2;
+
+      // Use a function to calculate p-value from the t-statistic
+      const pValue = computePValueFromTStatistic(tStatistic, degreesOfFreedom);
+
+      console.log(`P-value for ${key}:`, pValue);
+
+      correlations.push({ column: key, correlation, pValue });
+    } else {
+      console.log(
+        `Column ${key} is not numeric or cannot be converted to numeric.`
+      );
+    }
+  }
+
+  // Sort by absolute correlation and return the top 5
+  const sortedCorrelations = correlations
+    .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
+    .slice(0, 5);
+
+  console.log("Final sorted correlations:", sortedCorrelations);
+
+  return sortedCorrelations;
+};
+
+const computePValueFromTStatistic = (
+  t: number,
+  degreesOfFreedom: number
+): number => {
+  const p = 2 * (1 - jstat.studentt.cdf(Math.abs(t), degreesOfFreedom));
+  return p;
+};
+
+/**
+ * Helper function to locate the UUID column in a given table schema.
+ * @param client - The PostgreSQL client.
+ * @param schema - The schema name.
+ * @param table - The table name.
+ * @returns The name of the UUID column if found; otherwise, throws an error.
+ */
+const getUuidColumn = async (
+  client: pg.Client,
+  schema: string,
+  table: string
+): Promise<string> => {
+  const uuidQuery = `
+    SELECT column_name 
+    FROM information_schema.columns 
+    WHERE table_schema = $1 AND table_name = $2 AND data_type = 'uuid';
+  `;
+
+  const uuidResult = await client.query(uuidQuery, [schema, table]);
+
+  if (uuidResult.rows.length > 0) {
+    const uuidColumn = uuidResult.rows[0].column_name;
+    console.log(`Found UUID column: ${uuidColumn}`);
+    return uuidColumn;
+  } else {
+    throw new Error(
+      `Table ${schema}.${table} must have a UUID column to locate the selected row.`
+    );
+  }
 };

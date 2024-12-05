@@ -9,7 +9,8 @@ const VectorPlot: React.FC<{
   pointCount: number;
   refreshTrigger: boolean;
   onHoverChange: (metadata: Record<string, any> | null) => void;
-}> = ({ connection, schema, table, column, onHoverChange, pointCount, refreshTrigger }) => {
+  onPointClick: (selectedID: string, rowIDs: string[]) => void;
+}> = ({ connection, schema, table, column, onHoverChange, pointCount, refreshTrigger, onPointClick }) => {
   const [parsedVectors, setParsedVectors] = useState<
     { vector: number[]; metadata: Record<string, any> }[]
   >([]);
@@ -89,7 +90,11 @@ const VectorPlot: React.FC<{
       const pointIndex = event.points[0].pointIndex; // Get clicked point's index
       const selectedID = parsedVectors[pointIndex]?.metadata.id; // Retrieve the clicked vector
       if (!selectedID) return;
-
+      const rowIDs = parsedVectors.map((item) => item.metadata.id);
+      console.log("Clicked point ID:", selectedID);
+      console.log("Currently displayed row IDs:", rowIDs);
+      onPointClick(selectedID, rowIDs);
+      
       try {
         // Fetch data again, passing in the selected vector as the centerPoint
 
@@ -121,7 +126,7 @@ const VectorPlot: React.FC<{
         setError("Failed to refetch vector data.");
       }
     },
-    [parsedVectors, connection, schema, table, column]
+    [parsedVectors, connection, schema, table, column, onPointClick]
   );
 
   if (error) return <div>{error}</div>;

@@ -23,6 +23,7 @@
     "@mui/icons-material": "^6.1.9",
     "@mui/material": "^6.1.9",
     "electron-store": "^10.0.0",
+    "jstat": "^1.9.6",
     "os-utils": "^0.0.14",
     "pg": "^8.13.1",
     "plotly.js": "^2.35.2",
@@ -31,7 +32,8 @@
     "react-dom": "^18.3.1",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^7.0.1",
-    "recharts": "^2.13.3"
+    "recharts": "^2.13.3",
+    "simple-statistics": "^7.8.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

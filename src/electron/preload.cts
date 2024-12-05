@@ -57,6 +57,19 @@ electron.contextBridge.exposeInMainWorld("electron", {
       typeof args,
       { vector: number[]; metadata: Record<string, any> }[]
     >("getVectorData", args),
+  getTopCorrelations: (args: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+    column: string;
+    selectedID: string;
+    rowIDs: string[];
+  }) =>
+    ipcInvokeWithArgs<
+      "getTopCorrelations",
+      typeof args,
+      { column: string; correlation: number; pValue: number }[]
+    >("getTopCorrelations", args),
 } satisfies Window["electron"]);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(

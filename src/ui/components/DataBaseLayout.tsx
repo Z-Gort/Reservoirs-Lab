@@ -4,18 +4,46 @@ import LeftSidebar from "./LeftSidebar";
 import VectorPlot from "./VectorPlot";
 import Frame from "./Frame";
 
-const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connection }) => {
+const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
+  connection,
+}) => {
   const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
-  const [hoveredMetadata, setHoveredMetadata] = useState<Record<string, any> | null>(null);
+  const [hoveredMetadata, setHoveredMetadata] = useState<Record<
+    string,
+    any
+  > | null>(null);
   const [pointCount, setPointCount] = useState<number>(100);
   const [refreshTrigger, setRefreshTrigger] = useState<boolean>(false); // Add refresh trigger state
+  const [selectedPointData, setSelectedPointData] = useState<
+    { column: string; correlation: number, pValue: number }[] | null
+  >(null);
 
   const handleRefresh = (newPointCount: number) => {
     setPointCount(newPointCount); // Update the point count
     setRefreshTrigger((prev) => !prev); // Toggle the refresh trigger
     console.log(`Refreshing graph with ${newPointCount} points`);
+  };
+
+  const handlePointClick = async (selectedID: string, rowIDs: string[]) => {
+    if (!selectedSchema || !selectedTable || !selectedColumn) return;
+  
+    try {
+      const correlations = await window.electron.getTopCorrelations({
+        connection,
+        schema: selectedSchema,
+        table: selectedTable,
+        column: selectedColumn,
+        selectedID,
+        rowIDs,
+      });
+  
+      console.log("Correlations:", correlations);
+      setSelectedPointData(correlations); // Pass this data to LeftSidebar
+    } catch (error) {
+      console.error("Failed to fetch correlations:", error);
+    }
   };
 
   return (
@@ -41,6 +69,7 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
           setSelectedColumn={setSelectedColumn}
           hoveredMetadata={hoveredMetadata}
           onRefresh={handleRefresh}
+          selectedPointData={selectedPointData}
         />
 
         {/* Plot Area */}
@@ -62,16 +91,17 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({ connecti
               onHoverChange={setHoveredMetadata}
               pointCount={pointCount}
               refreshTrigger={refreshTrigger}
+              onPointClick={handlePointClick}
             />
           ) : (
-            <div>Please select a schema, table, and column to display the plot.</div>
+            <div>
+              Please select a schema, table, and column to display the plot.
+            </div>
           )}
         </Box>
       </Box>
     </Box>
   );
 };
-
-
 
 export default DatabaseLayout;

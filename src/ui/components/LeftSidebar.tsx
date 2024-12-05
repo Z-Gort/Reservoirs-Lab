@@ -14,6 +14,7 @@ interface LeftSidebarProps {
   setSelectedColumn: React.Dispatch<React.SetStateAction<string | null>>;
   hoveredMetadata: Record<string, any> | null; // New prop
   onRefresh: (pointCount: number) => void;
+  selectedPointData: { column: string; correlation: number, pValue: number }[] | null;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -26,6 +27,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   setSelectedColumn,
   hoveredMetadata,
   onRefresh,
+  selectedPointData
 }) => {
   const [sidebarWidth, setSidebarWidth] = useState(300);
 
@@ -48,6 +50,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     if (typeof value === "object" && value !== null) {
       // Convert objects/arrays to a JSON string
       return JSON.stringify(value, null, 2);
+    }
+    if (value === null) {
+      // Handle null values explicitly
+      return "null";
     }
     // Handle other types (string, number, boolean, etc.)
     return value.toString();
@@ -97,7 +103,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </Box>
         }
         bottomContent={
-          <BottomContent onRefresh={onRefresh} /> // Pass the onRefresh prop to BottomContent
+          <BottomContent 
+          onRefresh={onRefresh}
+          selectedPointData={selectedPointData}
+           /> // Pass the onRefresh prop to BottomContent
         }
       />
 
