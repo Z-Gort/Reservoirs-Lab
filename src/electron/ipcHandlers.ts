@@ -1,0 +1,219 @@
+import { BrowserWindow } from "electron";
+import {
+  ipcMainHandleWithArgs,
+  ipcMainHandle,
+  ipcMainOn,
+} from "./toFrontUtils.js";
+import { handleDatabaseConnection, handleRemoveConnection, getSchemas, getTables, getVectorColumns, getRandomRows, getUuidColumn} from "./dbUtils.js";
+import { windowManager } from "./windowManager.js";
+import pg from "pg";
+import { storeManager } from "./storeManager.js";
+import {computeCosineSimilarity, computeCorrelations} from "./mathUtils.js";
+import {runDimensionalityReduction} from "./pythonUtils.js";
+
+const { Client } = pg;
+
+export function setupIpcHandlers(mainWindow: BrowserWindow) {
+  ipcMainOn("openPopup", () => {
+    windowManager.createPopupWindow(mainWindow);
+  });
+
+  ipcMainOn("connectToDatabase", async (connectionData) => {
+    await handleDatabaseConnection(mainWindow, connectionData);
+  });
+
+  ipcMainHandle("getConnections", () => {
+    return storeManager.getConnections();
+  });
+
+  ipcMainOn("removeConnection", (connectionToRemove) => {
+    handleRemoveConnection(mainWindow, connectionToRemove);
+  });
+
+  ipcMainOn("openDatabaseWindow", (connection: DatabaseConnection) => {
+    windowManager.openDatabaseWindow(connection);
+  });
+
+  ipcMainHandleWithArgs(
+    "getSchemas",
+    async (_, { connection }: { connection: DatabaseConnection }) => {
+      return getSchemas(connection);
+    }
+  );
+
+  ipcMainHandleWithArgs(
+    "getTables",
+    async (
+      _,
+      { connection, schema }: { connection: DatabaseConnection; schema: string }
+    ) => {
+      return getTables(connection, schema);
+    }
+  );
+
+  ipcMainHandleWithArgs(
+    "getVectorColumns",
+    async (
+      _,
+      {
+        connection,
+        schema,
+        table,
+      }: { connection: DatabaseConnection; schema: string; table: string }
+    ) => {
+      console.log("getting vectors:", connection, schema, table);
+      return getVectorColumns(connection, schema, table);
+    }
+  );
+
+  ipcMainHandleWithArgs(
+    "getVectorData",
+    async (event, { connection, schema, table, column, limit, selectedID }) => {
+      const clientConfig = {
+        ...connection,
+        port: parseInt(connection.port, 10),
+      };
+      const client = new Client(clientConfig);
+      await client.connect();
+
+      try {
+        let centerPoint: string | undefined;
+
+        const uuidColumn = await getUuidColumn(client, schema, table);
+
+        // Fetch the high-dimensional vector if selectedID is provided
+        if (selectedID) {
+          console.log("PASSED IN SELECTEDID", selectedID);
+          const centerQuery = `
+          SELECT ${column} 
+          FROM ${schema}.${table} 
+          WHERE ${uuidColumn} = $1; -- Assuming 'id' is the primary key
+        `;
+
+          const centerRes = await client.query(centerQuery, [selectedID]);
+
+          if (centerRes.rows.length > 0) {
+            centerPoint = centerRes.rows[0][column];
+          } else {
+            throw new Error(`No vector found for selectedID: ${selectedID}`);
+          }
+        }
+
+        const rows = await getRandomRows(client, schema, table, column, limit);
+
+        // Step 3: Extract vectors and metadata
+        const vectorsWithMetadata = rows.map((row) => {
+          const vector = row[column];
+          const metadata = { ...row };
+          delete metadata[column];
+          return { vector, metadata };
+        });
+        const vectors = vectorsWithMetadata.map((item) => item.vector);
+        let reducedVectors;
+        if (selectedID) {
+          // Run dimensionality reduction with weighting based on centerPoint
+          console.log("RUNNING DIMENSIONALITY REDUCTION WITH CENTER POINT");
+          reducedVectors = await runDimensionalityReduction(
+            vectors,
+            centerPoint
+          );
+        } else {
+          // Run dimensionality reduction normally
+          reducedVectors = await runDimensionalityReduction(vectors);
+        }
+
+        console.log(
+          "REDUCED VECTORS: ",
+          JSON.stringify(reducedVectors).slice(0, 50)
+        );
+        const results = reducedVectors.map((vector, index) => ({
+          vector,
+          metadata: vectorsWithMetadata[index].metadata,
+        }));
+
+        return results;
+      } catch (error) {
+        console.error("Error fetching vector data:", error);
+        throw error;
+      } finally {
+        client.end();
+      }
+    }
+  );
+
+  ipcMainHandleWithArgs(
+    "getTopCorrelations",
+    async (
+      event,
+      {
+        connection,
+        schema,
+        table,
+        column,
+        selectedID,
+        rowIDs, // Array of row IDs currently displayed in the plot
+      }: {
+        connection: DatabaseConnection;
+        schema: string;
+        table: string;
+        column: string;
+        selectedID: string;
+        rowIDs: string[];
+      }
+    ) => {
+      const clientConfig = {
+        ...connection,
+        port: parseInt(connection.port, 10),
+      };
+      const client = new Client(clientConfig);
+      await client.connect();
+      const uuidColumn = await getUuidColumn(client, schema, table);
+      try {
+        // Step 1: Fetch the selected vector
+        const vectorQuery = `
+          SELECT ${column}
+          FROM ${schema}.${table}
+          WHERE ${uuidColumn} = $1;
+        `;
+        const vectorRes = await client.query(vectorQuery, [selectedID]);
+        if (vectorRes.rows.length === 0) {
+          throw new Error(`No vector found for selectedID: ${selectedID}`);
+        }
+        let selectedVector = vectorRes.rows[0][column];
+        selectedVector = JSON.parse(selectedVector);
+
+        // Step 2: Fetch vectors and metadata for provided rowIDs
+        const subsetQuery = `
+          SELECT id, ${column}, * -- Replace * with specific columns if necessary
+          FROM ${schema}.${table}
+          WHERE ${uuidColumn} = ANY($1::uuid[]);
+        `;
+        const subsetRes = await client.query(subsetQuery, [rowIDs]);
+        const vectorsWithMetadata = subsetRes.rows.map((row) => {
+          const vector = row[column];
+          const metadata = { ...row };
+          delete metadata[column];
+          return { vector, metadata };
+        });
+
+        // Step 3: Compute cosine similarities for the subset
+        const cosineSimilarities = vectorsWithMetadata.map(({ vector }) => {
+          vector = JSON.parse(vector);
+          return computeCosineSimilarity(selectedVector, vector);
+        });
+
+        const topCorrelations = computeCorrelations(
+          vectorsWithMetadata,
+          cosineSimilarities
+        );
+        console.log("TOP CORRELATIONS: ", topCorrelations);
+        return topCorrelations;
+      } catch (error) {
+        console.error("Error fetching top correlations:", error);
+        throw error;
+      } finally {
+        client.end();
+      }
+    }
+  );
+}

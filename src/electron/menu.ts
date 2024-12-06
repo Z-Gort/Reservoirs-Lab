@@ -1,45 +1,45 @@
-import { BrowserWindow, Menu, app } from 'electron';
-import { ipcWebContentsSend, isDev } from './util.js';
+import { BrowserWindow, Menu, app } from "electron";
+import { ipcWebContentsSend, isDev } from "./toFrontUtils.js";
 
 export function createMenu(mainWindow: BrowserWindow) {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: process.platform === 'darwin' ? undefined : 'App',
-        type: 'submenu',
+        label: process.platform === "darwin" ? undefined : "App",
+        type: "submenu",
         submenu: [
           {
-            label: 'Quit',
+            label: "Quit",
             click: app.quit,
           },
           {
-            label: 'DevTools',
+            label: "DevTools",
             click: () => mainWindow.webContents.openDevTools(),
             visible: isDev(),
           },
         ],
       },
       {
-        label: 'View',
-        type: 'submenu',
+        label: "View",
+        type: "submenu",
         submenu: [
           {
-            label: 'CPU',
+            label: "CPU",
             click: () =>
-              ipcWebContentsSend('changeView', mainWindow.webContents, 'CPU'),
+              ipcWebContentsSend("changeView", mainWindow.webContents, "CPU"),
           },
           {
-            label: 'RAM',
+            label: "RAM",
             click: () =>
-              ipcWebContentsSend('changeView', mainWindow.webContents, 'RAM'),
+              ipcWebContentsSend("changeView", mainWindow.webContents, "RAM"),
           },
           {
-            label: 'STORAGE',
+            label: "STORAGE",
             click: () =>
               ipcWebContentsSend(
-                'changeView',
+                "changeView",
                 mainWindow.webContents,
-                'STORAGE'
+                "STORAGE"
               ),
           },
         ],
