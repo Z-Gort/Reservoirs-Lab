@@ -25,7 +25,6 @@ function App() {
   useEffect(() => {
     // Fetch initial connections on app load
     window.electron.getConnections().then((initialConnections) => {
-      console.log("getting initial connections");
       setConnections(initialConnections);
     });
 
@@ -33,7 +32,6 @@ function App() {
     const unsubscribe = window.electron.on(
       "connectionsUpdated",
       (updatedConnections) => {
-        console.log("Connections updated:", updatedConnections);
         setConnections(updatedConnections);
       }
     );
@@ -67,7 +65,6 @@ function App() {
       <ConnectionsGrid
         connections={connections}
         onOpenDatabase={(connection) => {
-          console.log("Opening database for connection:", connection);
           window.electron.send("openDatabaseWindow", connection); // Send event to open a new database window
         }}
       />

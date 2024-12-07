@@ -57,6 +57,11 @@ type EventPayloadMapping = {
     selectedID: string;
     rowIDs: string[];
   };
+  getUuid: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+  };
   results: {
     getTopCorrelations: { column: string; correlation: number; pValue: number }[];
     getSchemas: string[];
@@ -67,6 +72,7 @@ type EventPayloadMapping = {
       index_type: string | null;
     }[];
     getVectorData: { vector: number[]; metadata: Record<string, any> }[];
+    getUuid: string | null;
   };
 };
 
@@ -131,5 +137,10 @@ interface Window {
       selectedID: string;
       rowIDs: string[];
     }) => Promise<{ column: string; correlation: number; pValue: number }[]>;
+    getUuid: (args: {
+      connection: DatabaseConnection;
+      schema: string;
+      table: string;
+    }) => Promise<string | null>;
   };
 }

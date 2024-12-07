@@ -4,12 +4,20 @@ import {
   ipcMainHandle,
   ipcMainOn,
 } from "./toFrontUtils.js";
-import { handleDatabaseConnection, handleRemoveConnection, getSchemas, getTables, getVectorColumns, getRandomRows, getUuidColumn} from "./dbUtils.js";
+import {
+  handleDatabaseConnection,
+  handleRemoveConnection,
+  getSchemas,
+  getTables,
+  getVectorColumns,
+  getRandomRows,
+  getUuidColumn,
+} from "./dbUtils.js";
 import { windowManager } from "./windowManager.js";
 import pg from "pg";
 import { storeManager } from "./storeManager.js";
-import {computeCosineSimilarity, computeCorrelations} from "./mathUtils.js";
-import {runDimensionalityReduction} from "./pythonUtils.js";
+import { computeCosineSimilarity, computeCorrelations } from "./mathUtils.js";
+import { runDimensionalityReduction } from "./pythonUtils.js";
 
 const { Client } = pg;
 
@@ -61,7 +69,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         table,
       }: { connection: DatabaseConnection; schema: string; table: string }
     ) => {
-      console.log("getting vectors:", connection, schema, table);
       return getVectorColumns(connection, schema, table);
     }
   );
@@ -80,10 +87,12 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         let centerPoint: string | undefined;
 
         const uuidColumn = await getUuidColumn(client, schema, table);
+        if (!uuidColumn) {
+          throw new Error(`No uuidColumn found for ${schema}.${table}`);
+        }
 
         // Fetch the high-dimensional vector if selectedID is provided
         if (selectedID) {
-          console.log("PASSED IN SELECTEDID", selectedID);
           const centerQuery = `
           SELECT ${column} 
           FROM ${schema}.${table} 
@@ -112,7 +121,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         let reducedVectors;
         if (selectedID) {
           // Run dimensionality reduction with weighting based on centerPoint
-          console.log("RUNNING DIMENSIONALITY REDUCTION WITH CENTER POINT");
           reducedVectors = await runDimensionalityReduction(
             vectors,
             centerPoint
@@ -122,10 +130,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           reducedVectors = await runDimensionalityReduction(vectors);
         }
 
-        console.log(
-          "REDUCED VECTORS: ",
-          JSON.stringify(reducedVectors).slice(0, 50)
-        );
         const results = reducedVectors.map((vector, index) => ({
           vector,
           metadata: vectorsWithMetadata[index].metadata,
@@ -184,7 +188,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
 
         // Step 2: Fetch vectors and metadata for provided rowIDs
         const subsetQuery = `
-          SELECT id, ${column}, * -- Replace * with specific columns if necessary
+          SELECT ${uuidColumn}, ${column}, * -- Replace * with specific columns if necessary
           FROM ${schema}.${table}
           WHERE ${uuidColumn} = ANY($1::uuid[]);
         `;
@@ -206,13 +210,46 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           vectorsWithMetadata,
           cosineSimilarities
         );
-        console.log("TOP CORRELATIONS: ", topCorrelations);
         return topCorrelations;
       } catch (error) {
         console.error("Error fetching top correlations:", error);
         throw error;
       } finally {
         client.end();
+      }
+    }
+  );
+
+  ipcMainHandleWithArgs(
+    "getUuid",
+    async (
+      event,
+      {
+        connection,
+        schema,
+        table,
+      }: {
+        connection: DatabaseConnection;
+        schema: string;
+        table: string;
+      }
+    ) => {
+      const client = new Client({
+        ...connection,
+        port: parseInt(connection.port, 10),
+      });
+
+      try {
+        await client.connect();
+
+        const uuidColumn = await getUuidColumn(client, schema, table);
+
+        return uuidColumn;
+      } catch (error) {
+        console.error("Error fetching UUID column:", error);
+        throw error;
+      } finally {
+        await client.end();
       }
     }
   );

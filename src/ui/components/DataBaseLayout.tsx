@@ -39,7 +39,6 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
         rowIDs,
       });
   
-      console.log("Correlations:", correlations);
       setSelectedPointData(correlations); // Pass this data to LeftSidebar
     } catch (error) {
       console.error("Failed to fetch correlations:", error);

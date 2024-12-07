@@ -69,6 +69,16 @@ electron.contextBridge.exposeInMainWorld("electron", {
       typeof args,
       { column: string; correlation: number; pValue: number }[]
     >("getTopCorrelations", args),
+  getUuid: (args: {
+    connection: DatabaseConnection;
+    schema: string;
+    table: string;
+  }) =>
+    ipcInvokeWithArgs<
+      "getUuid",
+      { connection: DatabaseConnection; schema: string; table: string },
+      string | null
+    >("getUuid", args),
 } satisfies Window["electron"]);
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(

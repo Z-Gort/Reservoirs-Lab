@@ -1,37 +1,40 @@
 import React, { useState, useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import TextFieldWithLabel from "./components/TextFieldWithLabel";
 import SubmitButton from "./components/SubmitButton";
 import FormContainer from "./components/FormContainer";
-import Header from "./components/Header";
 import CloseButton from "./components/CloseButton";
 
 function Popup() {
-  
   // State for error messages
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     console.log("Setting up listener for databaseConnectionStatus");
-  
-    const unsubscribe = window.electron.on("databaseConnectionStatus", ({ success }: { success: boolean }) => {
-      if (success) {
-        window.close();
-      } else {
-        setErrorMessage("Failed to connect to the database. Please try again.");
+
+    const unsubscribe = window.electron.on(
+      "databaseConnectionStatus",
+      ({ success }: { success: boolean }) => {
+        if (success) {
+          window.close();
+        } else {
+          setErrorMessage(
+            "Failed to connect to the database. Please try again."
+          );
+        }
       }
-    });
-  
+    );
+
     return unsubscribe; // Cleanup when the component unmounts
   }, []);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     // Ensure the event target is typed correctly
     const form = e.target as HTMLFormElement;
-  
+
     const formData = new FormData(form);
     const connectionData = {
       host: formData.get("host") as string,
@@ -40,7 +43,7 @@ function Popup() {
       password: formData.get("password") as string,
       database: formData.get("database") as string,
     };
-  
+
     try {
       window.electron.send("connectToDatabase", connectionData);
       console.log("Connection data sent successfully:", connectionData);
@@ -50,18 +53,19 @@ function Popup() {
   };
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
-        padding: "2rem",
-        boxSizing: "border-box",
-      }}
+        padding: theme.spacing(4),
+      })}
     >
-      <CloseButton onClick={() => window.close()} /> 
-      <Header text="Add Connection" variant="h4" />
+      <CloseButton onClick={() => window.close()} />
+      <Typography variant="h5" align="center">
+        Add Connection
+      </Typography>
       <Box
         sx={{
           marginBottom: "1rem",
@@ -83,7 +87,14 @@ function Popup() {
 
       {/* Display error message */}
       {errorMessage && (
-        <Box sx={{ color: "red", marginTop: "1rem" }}>{errorMessage}</Box>
+        <Box
+          sx={(theme) => ({
+            color: theme.palette.error.main,
+            marginTop: theme.spacing(2),
+          })}
+        >
+          {errorMessage}
+        </Box>
       )}
     </Box>
   );

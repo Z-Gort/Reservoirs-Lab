@@ -10,14 +10,12 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ label }) => {
     <Button
       type="submit"
       variant="contained"
-      color="primary"
+      color="primary" // Leverages the theme's primary color
       fullWidth
       sx={{
-        backgroundColor: "#1976d2",
-        color: "#ffffff",
-        "&:hover": {
-          backgroundColor: "#1565c0",
-        },
+        // Optional: Additional styles can refer to the theme for consistency
+        textTransform: "none", // Prevents default uppercase styling
+        fontWeight: "bold", // Example of using consistent typography styling
       }}
     >
       {label}

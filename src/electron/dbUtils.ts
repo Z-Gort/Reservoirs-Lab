@@ -177,7 +177,7 @@ export const getUuidColumn = async (
   client: pg.Client,
   schema: string,
   table: string
-): Promise<string> => {
+): Promise<string | null> => {
   const uuidQuery = `
     SELECT column_name 
     FROM information_schema.columns 
@@ -188,11 +188,8 @@ export const getUuidColumn = async (
 
   if (uuidResult.rows.length > 0) {
     const uuidColumn = uuidResult.rows[0].column_name;
-    console.log(`Found UUID column: ${uuidColumn}`);
     return uuidColumn;
   } else {
-    throw new Error(
-      `Table ${schema}.${table} must have a UUID column to locate the selected row.`
-    );
+    return null
   }
 };

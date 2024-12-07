@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import ResizableZone from "./ResizableZone";
 import SchemaAndTableSelector from "./SchemaAndTableSelector";
 import BottomContent from "./BottomContent";
@@ -14,7 +14,9 @@ interface LeftSidebarProps {
   setSelectedColumn: React.Dispatch<React.SetStateAction<string | null>>;
   hoveredMetadata: Record<string, any> | null; // New prop
   onRefresh: (pointCount: number) => void;
-  selectedPointData: { column: string; correlation: number, pValue: number }[] | null;
+  selectedPointData:
+    | { column: string; correlation: number; pValue: number }[]
+    | null;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -27,9 +29,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   setSelectedColumn,
   hoveredMetadata,
   onRefresh,
-  selectedPointData
+  selectedPointData,
 }) => {
   const [sidebarWidth, setSidebarWidth] = useState(300);
+  const theme = useTheme();
 
   const handleMouseMove = (e: MouseEvent) => {
     const newWidth = e.clientX;
@@ -66,16 +69,23 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
         flexDirection: "column",
         width: `${sidebarWidth}px`,
         height: "100vh",
-        backgroundColor: "#f5f5f5",
-        borderRight: "1px solid #ddd",
+        borderRight: "1px solid black", // Thin black line as the border
         position: "relative",
         overflow: "hidden",
+        backgroundColor: theme.palette.secondary.dark, // Sidebar background color
       }}
     >
       {/* Resizable Zones */}
       <ResizableZone
         topContent={
-          <Box sx={{ padding: "10px", backgroundColor: "#ffffff", color: "#333", overflowY: "auto" }}>
+          <Box
+            sx={{
+              padding: theme.spacing(2), // Use theme spacing
+              backgroundColor: theme.palette.secondary.dark, // Use theme paper background
+              color: theme.palette.text.primary, // Use theme text color
+              overflowY: "auto",
+            }}
+          >
             <SchemaAndTableSelector
               connection={connection}
               selectedSchema={selectedSchema}
@@ -86,27 +96,49 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               setSelectedColumn={setSelectedColumn}
             />
             {/* Metadata Display in Top Zone */}
-            <Box sx={{ marginTop: "10px" }}>
-              <h3>Point Details</h3>
-              {hoveredMetadata ? (
-                <ul>
+            <Box sx={{ marginTop: theme.spacing(2) }}>
+              {hoveredMetadata && selectedColumn ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: theme.spacing(0.5),
+                  }}
+                >
                   {Object.entries(hoveredMetadata).map(([key, value]) => (
-                    <li key={key}>
+                    <Box
+                      key={key}
+                      sx={{
+                        fontSize: "0.75rem", // Smaller text
+                        lineHeight: 1.2, // Tighter line spacing
+                        color: theme.palette.text.primary, // Primary text color
+                      }}
+                    >
                       <strong>{key}:</strong> {formatMetadataValue(value)}
-                    </li>
+                    </Box>
                   ))}
-                </ul>
-              ) : (
-                <p>Hover over a point to see details here.</p>
-              )}
+                </Box>
+              ) : selectedColumn ? (
+                <p
+                  style={{
+                    color: theme.palette.text.secondary, // Use a lighter shade for the text
+                    margin: 0,
+                    fontSize: "0.85rem", // Smaller text
+                  }}
+                >
+                  Hover a point to see details.
+                </p>
+              ) : null}
             </Box>
           </Box>
         }
         bottomContent={
-          <BottomContent 
-          onRefresh={onRefresh}
-          selectedPointData={selectedPointData}
-           /> // Pass the onRefresh prop to BottomContent
+          <Box sx={{ marginTop: "16px" }}> {/* Adjust margin as needed */}
+            <BottomContent
+              onRefresh={onRefresh}
+              selectedPointData={selectedPointData}
+            />
+          </Box>
         }
       />
 
@@ -120,7 +152,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           width: "5px",
           height: "100%",
           cursor: "col-resize",
-          backgroundColor: "#ddd",
+          backgroundColor: theme.palette.secondary.dark, // Use theme divider color
         }}
       />
     </Box>

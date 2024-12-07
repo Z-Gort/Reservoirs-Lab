@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, MenuItem, Select, Typography } from "@mui/material";
+import { Box, MenuItem, Select, useTheme } from "@mui/material";
 
 interface SchemaAndTableSelectorProps {
   connection: DatabaseConnection;
@@ -22,11 +22,22 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
 }) => {
   const [schemas, setSchemas] = React.useState<string[]>([]);
   const [tables, setTables] = React.useState<string[]>([]);
-  const [columns, setColumns] = React.useState<{ column_name: string; has_index: boolean }[]>([]);
+  const [columns, setColumns] = React.useState<
+    { column_name: string; has_index: boolean }[]
+  >([]);
+  const theme = useTheme();
 
   // Fetch schemas on load
   React.useEffect(() => {
-    window.electron.getSchemas(connection).then(setSchemas).catch(console.error);
+    window.electron
+      .getSchemas(connection)
+      .then((fetchedSchemas) => {
+        setSchemas(fetchedSchemas);
+        if (fetchedSchemas.includes("public")) {
+          setSelectedSchema("public");
+        }
+      })
+      .catch(console.error);
   }, [connection]);
 
   // Fetch tables when schema changes
@@ -49,62 +60,96 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
       setColumns([]);
       setSelectedColumn(null);
       window.electron
-        .getVectorColumns({ connection, schema: selectedSchema!, table: selectedTable })
+        .getVectorColumns({
+          connection,
+          schema: selectedSchema!,
+          table: selectedTable,
+        })
         .then(setColumns)
         .catch(console.error);
     }
   }, [selectedTable, selectedSchema, connection, setSelectedColumn]);
 
   return (
-    <Box>
-      <Typography>Select Schema:</Typography>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        backgroundColor: theme.palette.secondary.dark, // Ensure it matches the sidebar color
+        color: theme.palette.text.primary, // Use text color consistent with the sidebar // Add some spacing for better layout
+        borderRadius: theme.shape.borderRadius, // Optional: Add some rounding for aesthetics
+      }}
+    >
+      {/* Schema Selector */}
       <Select
         value={selectedSchema || ""}
         onChange={(e) => setSelectedSchema(e.target.value || null)}
         fullWidth
+        displayEmpty
       >
         <MenuItem value="" disabled>
           Select a Schema
         </MenuItem>
-        {schemas.map((schema) => (
-          <MenuItem key={schema} value={schema}>
-            {schema}
+        {schemas.length === 0 ? (
+          <MenuItem value="" disabled>
+            Loading schemas...
           </MenuItem>
-        ))}
+        ) : (
+          schemas.map((schema) => (
+            <MenuItem key={schema} value={schema}>
+              {schema}
+            </MenuItem>
+          ))
+        )}
       </Select>
 
-      <Typography>Select Table:</Typography>
+      {/* Table Selector */}
       <Select
         value={selectedTable || ""}
         onChange={(e) => setSelectedTable(e.target.value || null)}
         fullWidth
+        displayEmpty
         disabled={!selectedSchema}
       >
         <MenuItem value="" disabled>
           Select a Table
         </MenuItem>
-        {tables.map((table) => (
-          <MenuItem key={table} value={table}>
-            {table}
+        {tables.length === 0 ? (
+          <MenuItem value="" disabled>
+            No tables available
           </MenuItem>
-        ))}
+        ) : (
+          tables.map((table) => (
+            <MenuItem key={table} value={table}>
+              {table}
+            </MenuItem>
+          ))
+        )}
       </Select>
 
-      <Typography>Select Column:</Typography>
+      {/* Column Selector */}
       <Select
         value={selectedColumn || ""}
         onChange={(e) => setSelectedColumn(e.target.value || null)}
         fullWidth
+        displayEmpty
         disabled={!selectedTable}
       >
         <MenuItem value="" disabled>
           Select a Column
         </MenuItem>
-        {columns.map((column) => (
-          <MenuItem key={column.column_name} value={column.column_name}>
-            {column.column_name} {column.has_index ? "🟢" : "🔴"}
+        {columns.length === 0 ? (
+          <MenuItem value="" disabled>
+            No columns available
           </MenuItem>
-        ))}
+        ) : (
+          columns.map((column) => (
+            <MenuItem key={column.column_name} value={column.column_name}>
+              {column.column_name}
+            </MenuItem>
+          ))
+        )}
       </Select>
     </Box>
   );
