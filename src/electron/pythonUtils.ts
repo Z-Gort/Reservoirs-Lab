@@ -4,7 +4,6 @@ import path from "path";
 import { writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { PythonShell } from "python-shell";
-import { isDev } from "./toFrontUtils.js";
 
 // Python helper function for dimensionality reduction
 const __filename = fileURLToPath(import.meta.url);
@@ -50,14 +49,12 @@ export async function runDimensionalityReduction(
       args.push(serializedCenterPoint);
     }
 
-    const pythonPath = process.platform === "win32"
-  ? path.join(isDev() ? process.cwd() : process.resourcesPath, "venv", "Scripts", "python.exe")
-  : path.join(isDev() ? process.cwd() : process.resourcesPath, "venv", "bin", "python");
+    console.log("ABOUT TO RUN SCRIPT: ", scriptPath);
 
     const results = await new Promise<number[][]>((resolve, reject) => {
       const shell = new PythonShell(scriptPath, {
         args: args,
-        pythonPath: pythonPath,
+        pythonPath: "./venv/bin/python3",
         pythonOptions: ["-u"],
       });
 

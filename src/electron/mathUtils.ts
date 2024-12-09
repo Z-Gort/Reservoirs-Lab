@@ -61,14 +61,18 @@ export const computeCorrelations = (
 
     // Check if the column is numeric or convertible to numeric
     const isColumnNumeric = values.every((v) => {
+      console.log("Processing value:", v);
       if (typeof v === "number") {
+        console.log("Is number:", v);
         return true;
       }
       if (typeof v === "string") {
         const trimmedValue = v.trim();
         const parsedValue = parseFloat(trimmedValue);
+        console.log("String:", v, "| Trimmed:", trimmedValue, "| Parsed:", parsedValue);
         return !isNaN(parsedValue) && !isNaN(Number(trimmedValue));
       }
+      console.log("Non-numeric:", v);
       return false;
     });
 
@@ -93,9 +97,13 @@ export const computeCorrelations = (
       // Use a function to calculate p-value from the t-statistic
       const pValue = computePValueFromTStatistic(tStatistic, degreesOfFreedom);
 
+      console.log(`P-value for ${key}:`, pValue);
 
       correlations.push({ column: key, correlation, pValue });
     } else {
+      console.log(
+        `Column ${key} is not numeric or cannot be converted to numeric.`
+      );
     }
   }
 
@@ -103,6 +111,8 @@ export const computeCorrelations = (
   const sortedCorrelations = correlations
     .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
     .slice(0, 5);
+
+  console.log("Final sorted correlations:", sortedCorrelations);
 
   return sortedCorrelations;
 };

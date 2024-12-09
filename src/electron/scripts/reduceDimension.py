@@ -8,7 +8,7 @@ def main():
     
     with open(temp_file_path, 'r') as f:
         serialized_vectors = f.read()
-    
+
     vectors = np.array([list(map(float, row.split(','))) for row in serialized_vectors.split(';')])
 
     reducer = umap.UMAP(n_components=2, random_state=42)

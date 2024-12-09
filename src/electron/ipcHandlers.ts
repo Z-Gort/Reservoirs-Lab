@@ -215,6 +215,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           vectorsWithMetadata,
           cosineSimilarities
         );
+        console.log("Top correlations:", topCorrelations);
 
         return topCorrelations;
       } catch (error) {

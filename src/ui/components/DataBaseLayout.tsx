@@ -15,15 +15,16 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
     any
   > | null>(null);
   const [pointCount, setPointCount] = useState<number>(100);
-  const [refreshTrigger, setRefreshTrigger] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<boolean>(false); // Add refresh trigger state
   const [selectedPointData, setSelectedPointData] = useState<
     { column: string; correlation: number; pValue: number }[] | null
   >(null);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
 
   const handleRefresh = (newPointCount: number) => {
-    setPointCount(newPointCount); 
-    setRefreshTrigger((prev) => !prev); 
+    setPointCount(newPointCount); // Update the point count
+    setRefreshTrigger((prev) => !prev); // Toggle the refresh trigger
+    console.log(`Refreshing graph with ${newPointCount} points`);
   };
 
   const handlePointClick = async (selectedID: string, rowIDs: string[]) => {
@@ -49,11 +50,11 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
     <Box
       sx={{
         display: "flex",
-        flexDirection: "column", 
+        flexDirection: "column", // Ensure header is at the top
         height: "100vh",
         width: "100vw",
         overflow: "hidden",
-        position: "relative", 
+        position: "relative", // For overlay positioning
       }}
     >
       {/* Error Overlay */}
@@ -66,12 +67,12 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
             width: "100%",
             height: "100%",
             display: "flex",
-            justifyContent: "center", 
-            alignItems: "center", 
-            backdropFilter: "blur(2px)", 
-            zIndex: 10, 
-            backgroundColor: "rgba(255, 255, 255, 0.4)", 
-            padding: 2, 
+            justifyContent: "center", // Center horizontally
+            alignItems: "center", // Center vertically
+            backdropFilter: "blur(2px)", // Very mild blur effect
+            zIndex: 10, // Ensure it appears above other content
+            backgroundColor: "rgba(255, 255, 255, 0.4)", // Slightly dim the background
+            padding: 2, // Add some padding around the content
           }}
         >
           <Box
@@ -80,10 +81,10 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
               p: 2,
               border: "1px solid",
               borderColor: "error.main",
-              bgcolor: "rgba(255, 255, 255, 0.9)",
-              borderRadius: "8px", 
-              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", 
-              maxWidth: "400px", 
+              bgcolor: "rgba(255, 255, 255, 0.9)", // Subtle white background
+              borderRadius: "8px", // Slightly rounded corners
+              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", // Subtle shadow for depth
+              maxWidth: "400px", // Constrain the box width
               width: "100%",
             }}
           >
@@ -99,8 +100,8 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
         sx={{
           display: "flex",
           flex: 1,
-          filter: databaseError ? "blur(0.15px)" : "none",
-          transition: "filter 0.3s ease",
+          filter: databaseError ? "blur(0.15px)" : "none", // Blur content when there's an error
+          transition: "filter 0.3s ease", // Smooth transition
         }}
       >
         {/* Left Sidebar */}

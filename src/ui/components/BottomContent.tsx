@@ -15,9 +15,9 @@ const BottomContent: React.FC<BottomContentProps> = ({
   onRefresh,
   selectedPointData,
 }) => {
-
-  const [pointCount, setPointCount] = useState<number | string>(1000);
-
+  console.log("BottomContent - selectedPointData:", selectedPointData);
+  const [pointCount, setPointCount] = useState<number | string>(100);
+  // Default to 100 points
   const theme = useTheme();
 
   const handleRefreshClick = () => {
