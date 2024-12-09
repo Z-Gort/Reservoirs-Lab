@@ -1,7 +1,10 @@
 // @ts-ignore
 import jstat from "jstat";
 
-export function computeCosineSimilarity(vecA: number[], vecB: number[]): number {
+export function computeCosineSimilarity(
+  vecA: number[],
+  vecB: number[]
+): number {
   if (vecA.length !== vecB.length) {
     throw new Error("Vectors must have the same length");
   }
@@ -57,11 +60,21 @@ export const computeCorrelations = (
     const values = vectorsWithMetadata.map(({ metadata }) => metadata[key]);
 
     // Check if the column is numeric or convertible to numeric
-    const isColumnNumeric = values.every(
-      (v) =>
-        typeof v === "number" ||
-        (!isNaN(parseFloat(v as string)) && typeof v === "string")
-    );
+    const isColumnNumeric = values.every((v) => {
+      console.log("Processing value:", v);
+      if (typeof v === "number") {
+        console.log("Is number:", v);
+        return true;
+      }
+      if (typeof v === "string") {
+        const trimmedValue = v.trim();
+        const parsedValue = parseFloat(trimmedValue);
+        console.log("String:", v, "| Trimmed:", trimmedValue, "| Parsed:", parsedValue);
+        return !isNaN(parsedValue) && !isNaN(Number(trimmedValue));
+      }
+      console.log("Non-numeric:", v);
+      return false;
+    });
 
     if (isColumnNumeric) {
       // Convert all values to numbers (if needed)

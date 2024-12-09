@@ -9,6 +9,7 @@ interface SchemaAndTableSelectorProps {
   setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>;
   selectedColumn: string | null;
   setSelectedColumn: React.Dispatch<React.SetStateAction<string | null>>;
+  onError: (error: string | null) => void;
 }
 
 const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
@@ -19,16 +20,20 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
   setSelectedTable,
   selectedColumn,
   setSelectedColumn,
+  onError,
 }) => {
   const [schemas, setSchemas] = React.useState<string[]>([]);
   const [tables, setTables] = React.useState<string[]>([]);
   const [columns, setColumns] = React.useState<
     { column_name: string; has_index: boolean }[]
   >([]);
+  const [error, setError] = React.useState<string | null>(null);
   const theme = useTheme();
 
   // Fetch schemas on load
   React.useEffect(() => {
+    setError(null); // Reset error before making the request
+
     window.electron
       .getSchemas(connection)
       .then((fetchedSchemas) => {
@@ -37,7 +42,10 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
           setSelectedSchema("public");
         }
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Failed to fetch schemas:", err);
+        onError("Connection failed... Close and retry.");
+      });
   }, [connection]);
 
   // Fetch tables when schema changes
@@ -87,6 +95,21 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
         onChange={(e) => setSelectedSchema(e.target.value || null)}
         fullWidth
         displayEmpty
+        sx={{
+          height: "36px", // Adjust the height of the Select field
+          fontSize: "0.9rem", // Make the text slightly smaller
+        }}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: "200px", // Limit the height of the dropdown menu
+              "& .MuiMenuItem-root": {
+                minHeight: "32px", // Reduce the height of menu items
+                fontSize: "0.9rem", // Match the font size of the Select
+              },
+            },
+          },
+        }}
       >
         <MenuItem value="" disabled>
           Select a Schema
@@ -111,6 +134,21 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
         fullWidth
         displayEmpty
         disabled={!selectedSchema}
+        sx={{
+          height: "36px", // Adjust the height of the Select field
+          fontSize: "0.9rem", // Make the text slightly smaller
+        }}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: "200px", // Limit the height of the dropdown menu
+              "& .MuiMenuItem-root": {
+                minHeight: "32px", // Reduce the height of menu items
+                fontSize: "0.9rem", // Match the font size of the Select
+              },
+            },
+          },
+        }}
       >
         <MenuItem value="" disabled>
           Select a Table
@@ -135,6 +173,21 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
         fullWidth
         displayEmpty
         disabled={!selectedTable}
+        sx={{
+          height: "36px", // Adjust the height of the Select field
+          fontSize: "0.9rem", // Make the text slightly smaller
+        }}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              maxHeight: "200px", // Limit the height of the dropdown menu
+              "& .MuiMenuItem-root": {
+                minHeight: "32px", // Reduce the height of menu items
+                fontSize: "0.9rem", // Match the font size of the Select
+              },
+            },
+          },
+        }}
       >
         <MenuItem value="" disabled>
           Select a Column

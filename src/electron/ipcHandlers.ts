@@ -45,9 +45,14 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
   ipcMainHandleWithArgs(
     "getSchemas",
     async (_, { connection }: { connection: DatabaseConnection }) => {
-      return getSchemas(connection);
+      try {
+        return await getSchemas(connection);
+      } catch (err) {
+        throw new Error("Error in IPC handler: Failed to fetch schemas.");
+      }
     }
   );
+  
 
   ipcMainHandleWithArgs(
     "getTables",
@@ -210,6 +215,8 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           vectorsWithMetadata,
           cosineSimilarities
         );
+        console.log("Top correlations:", topCorrelations);
+
         return topCorrelations;
       } catch (error) {
         console.error("Error fetching top correlations:", error);

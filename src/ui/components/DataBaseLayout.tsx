@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import LeftSidebar from "./LeftSidebar";
 import VectorPlot from "./VectorPlot";
 import Frame from "./Frame";
@@ -17,8 +17,9 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
   const [pointCount, setPointCount] = useState<number>(100);
   const [refreshTrigger, setRefreshTrigger] = useState<boolean>(false); // Add refresh trigger state
   const [selectedPointData, setSelectedPointData] = useState<
-    { column: string; correlation: number, pValue: number }[] | null
+    { column: string; correlation: number; pValue: number }[] | null
   >(null);
+  const [databaseError, setDatabaseError] = useState<string | null>(null);
 
   const handleRefresh = (newPointCount: number) => {
     setPointCount(newPointCount); // Update the point count
@@ -28,7 +29,7 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
 
   const handlePointClick = async (selectedID: string, rowIDs: string[]) => {
     if (!selectedSchema || !selectedTable || !selectedColumn) return;
-  
+
     try {
       const correlations = await window.electron.getTopCorrelations({
         connection,
@@ -38,7 +39,7 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
         selectedID,
         rowIDs,
       });
-  
+
       setSelectedPointData(correlations); // Pass this data to LeftSidebar
     } catch (error) {
       console.error("Failed to fetch correlations:", error);
@@ -53,10 +54,56 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
         height: "100vh",
         width: "100vw",
         overflow: "hidden",
+        position: "relative", // For overlay positioning
       }}
     >
+      {/* Error Overlay */}
+      {databaseError && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center", // Center horizontally
+            alignItems: "center", // Center vertically
+            backdropFilter: "blur(2px)", // Very mild blur effect
+            zIndex: 10, // Ensure it appears above other content
+            backgroundColor: "rgba(255, 255, 255, 0.4)", // Slightly dim the background
+            padding: 2, // Add some padding around the content
+          }}
+        >
+          <Box
+            sx={{
+              textAlign: "center",
+              p: 2,
+              border: "1px solid",
+              borderColor: "error.main",
+              bgcolor: "rgba(255, 255, 255, 0.9)", // Subtle white background
+              borderRadius: "8px", // Slightly rounded corners
+              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", // Subtle shadow for depth
+              maxWidth: "400px", // Constrain the box width
+              width: "100%",
+            }}
+          >
+            <Typography variant="body1" color="error">
+              {databaseError}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
       {/* Main Content */}
-      <Box sx={{ display: "flex", flex: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flex: 1,
+          filter: databaseError ? "blur(0.15px)" : "none", // Blur content when there's an error
+          transition: "filter 0.3s ease", // Smooth transition
+        }}
+      >
         {/* Left Sidebar */}
         <LeftSidebar
           connection={connection}
@@ -69,6 +116,7 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
           hoveredMetadata={hoveredMetadata}
           onRefresh={handleRefresh}
           selectedPointData={selectedPointData}
+          onError={setDatabaseError}
         />
 
         {/* Plot Area */}

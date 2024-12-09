@@ -17,6 +17,7 @@ interface LeftSidebarProps {
   selectedPointData:
     | { column: string; correlation: number; pValue: number }[]
     | null;
+  onError: (error: string | null) => void;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -30,6 +31,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   hoveredMetadata,
   onRefresh,
   selectedPointData,
+  onError
 }) => {
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const theme = useTheme();
@@ -94,6 +96,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               setSelectedTable={setSelectedTable}
               selectedColumn={selectedColumn}
               setSelectedColumn={setSelectedColumn}
+              onError={onError}
             />
             {/* Metadata Display in Top Zone */}
             <Box sx={{ marginTop: theme.spacing(2) }}>
@@ -133,7 +136,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </Box>
         }
         bottomContent={
-          <Box sx={{ marginTop: "16px" }}> {/* Adjust margin as needed */}
+          <Box sx={{ marginTop: "16px" }}>
+            {" "}
+            {/* Adjust margin as needed */}
             <BottomContent
               onRefresh={onRefresh}
               selectedPointData={selectedPointData}

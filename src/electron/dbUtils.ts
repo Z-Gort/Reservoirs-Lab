@@ -58,12 +58,16 @@ export async function getSchemas(connection: DatabaseConnection): Promise<string
     ...connection,
     port: parseInt(connection.port, 10),
   });
+
   await client.connect();
+
   try {
     const res = await client.query(
       "SELECT schema_name FROM information_schema.schemata"
     );
     return res.rows.map((row) => row.schema_name);
+  } catch (err) {
+    throw new Error("Failed to retrieve schemas from the database.");
   } finally {
     client.end();
   }

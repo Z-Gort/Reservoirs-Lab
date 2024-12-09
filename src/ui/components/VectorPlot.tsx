@@ -1,7 +1,8 @@
 import { useTheme } from "@mui/material/styles";
-import { Box } from "@mui/material";
-import React, { useEffect, useState, useCallback } from "react";
+import { Box, CircularProgress } from "@mui/material";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Plot from "react-plotly.js";
+import HoverableQuestionMark from "./HoverableQuestionMark";
 
 const VectorPlot: React.FC<{
   connection: DatabaseConnection;
@@ -26,12 +27,17 @@ const VectorPlot: React.FC<{
     { vector: number[]; metadata: Record<string, any> }[]
   >([]);
   const [vectors, setVectors] = useState<number[][]>([]);
+  const [colors, setColors] = useState<string[]>([]);
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSimilarityMode, setIsSimilarityMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const theme = useTheme();
+  const plotRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const data = await window.electron.getVectorData({
           connection,
@@ -48,9 +54,28 @@ const VectorPlot: React.FC<{
         );
         setParsedVectors(parsed);
         setVectors(parsed.map((item) => item.vector));
+
+        const defaultColors = Array(parsed.length).fill("blue");
+        setColors(defaultColors);
+
+        // Reset similarity mode on data fetch
+        setIsSimilarityMode(false);
       } catch (err) {
         console.error("Error fetching vector data:", err);
-        setError("Failed to fetch vector data.");
+
+        // Type guard: Ensure `err` is an object with a `message` property
+        if (
+          err instanceof Error &&
+          err.message.includes("No uuidColumn found")
+        ) {
+          setError(
+            "Table must contain a UUID column for vector visualization."
+          );
+        } else {
+          setError("Failed to fetch vector data.");
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -59,21 +84,69 @@ const VectorPlot: React.FC<{
 
   const handleHover = useCallback(
     (event: any) => {
-      const pointIndex = event.points[0].pointIndex;
-      const x = event.points[0].x;
-      const y = event.points[0].y;
-      const metadata = parsedVectors[pointIndex]?.metadata || null;
+      if (!event || !event.points || !event.points[0]) {
+        console.warn("Invalid hover event structure:", event);
+        return;
+      }
+
+      const point = event.points[0];
+      const x = point.x;
+      const y = point.y;
+      const metadata = parsedVectors[point.pointIndex]?.metadata || null;
 
       if (isNaN(x) || isNaN(y) || x === undefined || y === undefined) {
         console.error("Invalid x or y value for hover:", { x, y });
         return;
       }
 
+      // Safely access axis information from the event
+      const xaxis = event.xaxes?.[0];
+      const yaxis = event.yaxes?.[0];
+
+      if (!xaxis || !yaxis) {
+        console.warn("Axis information is unavailable. Hover effect skipped.");
+        return;
+      }
+
+      // Calculate pixel positions using axis conversion methods
+      const xPixel = xaxis._offset + xaxis.l2p(x);
+      const yPixel = yaxis._offset + yaxis.l2p(y); // Correct formula for yPixel
+
+      // Get plot area boundaries in pixels
+      const leftBoundary = xaxis._offset;
+      const rightBoundary = xaxis._offset + xaxis._length;
+      const topBoundary = yaxis._offset;
+
+      console.log({
+        xPixel,
+        yPixel,
+        leftBoundary,
+        rightBoundary,
+        topBoundary,
+      });
+
+      // Define a pixel margin for edge detection
+      const horizontalMargin = 10; // Adjust as needed
+      const topMargin = horizontalMargin / 2; // Top margin is half the size of the horizontal ones
+
+      // Check if the point is near the edges (left, right, top)
+      if (
+        xPixel < leftBoundary + horizontalMargin || // Too close to the left
+        xPixel > rightBoundary - horizontalMargin || // Too close to the right
+        yPixel < topBoundary + topMargin // Too close to the top
+      ) {
+        console.warn("Point is too close to the edge. Hover effect skipped.");
+        return;
+      }
+
+      // Call the onHoverChange handler
       onHoverChange(metadata);
+
+      // Create a new annotation
       const newAnnotation = {
         x,
         y,
-        text: "Click on point to see insights",
+        text: "Click point for insights",
         showarrow: true,
         arrowhead: 2,
         ax: 0,
@@ -87,6 +160,7 @@ const VectorPlot: React.FC<{
         bordercolor: "white",
       };
 
+      // Set the new annotation
       setAnnotations([newAnnotation]);
     },
     [parsedVectors, onHoverChange]
@@ -115,7 +189,7 @@ const VectorPlot: React.FC<{
       if (!selectedID) return;
       const rowIDs = parsedVectors.map((item) => item.metadata[idColumn!]);
       onPointClick(selectedID, rowIDs);
-
+      setIsLoading(true);
       try {
         // Fetch data again, passing in the selected vector as the centerPoint
         const data = await window.electron.getVectorData({
@@ -138,9 +212,26 @@ const VectorPlot: React.FC<{
 
         // Optionally clear annotations or update with new insights
         setAnnotations([]);
+
+        // Calculate distances and colors
+        const distances = parsed.map(
+          (item) => Math.sqrt(item.vector[0] ** 2 + item.vector[1] ** 2) // Distance from (0,0)
+        );
+        const maxDistance = Math.max(...distances); // Find the max distance for normalization
+        const normalizedDistances = distances.map((d) => d / maxDistance); // Normalize to [0, 1]
+
+        // Map distances to colors (e.g., red to blue)
+        const newColors = normalizedDistances.map(
+          (dist) => `rgba(${255 * dist}, 0, ${255 * (1 - dist)}, 1)` // Red to Blue gradient
+        );
+
+        setColors(newColors);
+        setIsSimilarityMode(true);
       } catch (err) {
         console.error("Error refetching vector data:", err);
         setError("Failed to refetch vector data.");
+      } finally {
+        setIsLoading(false);
       }
     },
     [parsedVectors, connection, schema, table, column, onPointClick]
@@ -154,53 +245,112 @@ const VectorPlot: React.FC<{
   return (
     <Box
       sx={{
+        position: "relative",
         width: "100%", // Full width of the parent container
         height: "100%", // Full height of the parent container
       }}
     >
-      <Plot
-        data={[
-          {
-            x,
-            y,
-            mode: "markers",
-            type: "scatter",
-            marker: {
-              size: 8,
-              color: "blue",
-              opacity: 0.8,
+      {isSimilarityMode && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 20, // Ensure it appears above other elements
+            fontSize: "1rem",
+            fontWeight: "bold",
+            display: "flex",
+            gap: theme.spacing(1),
+            color: theme.palette.text.primary, // Match the theme's text color
+          }}
+        >
+          Similarity View
+          <HoverableQuestionMark tooltipText="Points plotted taking into account cosine distance from point of interest as well as natural groupings. Point of interest at (0,0)." />
+        </Box>
+      )}
+      {/* Loader overlay */}
+      {isLoading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.5)", // Slightly dim the background
+            zIndex: 10,
+          }}
+        >
+          <CircularProgress color="primary" />
+        </Box>
+      )}
+
+      {/* Graph with blur effect when loading */}
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          filter: isLoading ? "blur(0.15px)" : "none", // Add blur effect if loading
+          transition: "filter 0.3s ease", // Smooth transition for blur
+        }}
+      >
+        <Plot
+          data={[
+            {
+              x,
+              y,
+              mode: "markers",
+              type: "scatter",
+              marker: {
+                size: 8,
+                color: colors, // Apply the calculated colors
+                opacity: 0.8,
+              },
+              hoverinfo: "none",
             },
-            hoverinfo: "none",
-          },
-        ]}
-        layout={{
-          autosize: true,
-          paper_bgcolor: theme.palette.background.paper, // Themed paper background
-          plot_bgcolor: theme.palette.background.paper, // Themed plot background
-          xaxis: {
-            zeroline: true, // Show the zero line
-            showgrid: true, // Display grid lines
-            showticklabels: true, // Display tick labels (numbers)
-          },
-          yaxis: {
-            zeroline: true, // Show the zero line
-            showgrid: true, // Display grid lines
-            showticklabels: true, // Display tick labels (numbers)
-          },
-          showlegend: false,
-          annotations,
-        }}
-        config={{
-          displaylogo: false,
-          scrollZoom: true,
-          responsive: true,
-        }}
-        onHover={handleHover}
-        onUnhover={handleUnhover}
-        onClick={handleClick}
-        useResizeHandler={true} // Enables resize handling
-        style={{ width: "100%", height: "100%" }}
-      />
+          ]}
+          layout={{
+            autosize: true,
+            paper_bgcolor: theme.palette.background.paper,
+            uirevision: "preserve", // Themed paper background
+            plot_bgcolor: theme.palette.background.paper, // Themed plot background
+            xaxis: {
+              zeroline: true, // Show the zero line
+              showgrid: true, // Display grid lines
+              showticklabels: true, // Display tick labels (numbers)
+            },
+            yaxis: {
+              zeroline: true, // Show the zero line
+              showgrid: true, // Display grid lines
+              showticklabels: true, // Display tick labels (numbers)
+            },
+            showlegend: false,
+            annotations,
+          }}
+          config={{
+            displaylogo: false,
+            scrollZoom: true,
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: [
+              "toImage", // Remove "Save as PNG"
+              "zoom2d", // Remove "Zoom"
+              "resetScale2d", // Remove "Reset Axes"
+              "hoverClosestCartesian", // Remove "Hover Closest"
+              "hoverCompareCartesian", // Remove "Compare Data"
+            ],
+          }}
+          onHover={handleHover}
+          onUnhover={handleUnhover}
+          onClick={handleClick}
+          useResizeHandler={true}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </Box>
     </Box>
   );
 };
