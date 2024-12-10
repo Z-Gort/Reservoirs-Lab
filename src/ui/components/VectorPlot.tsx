@@ -342,7 +342,7 @@ const VectorPlot: React.FC<{
               "resetScale2d", // Remove "Reset Axes"
               "hoverClosestCartesian", // Remove "Hover Closest"
               "hoverCompareCartesian", // Remove "Compare Data"
-            ],
+            ],  
           }}
           onHover={handleHover}
           onUnhover={handleUnhover}

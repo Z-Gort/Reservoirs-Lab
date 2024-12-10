@@ -1,6 +1,5 @@
 import { ipcMain, WebContents, WebFrameMain } from 'electron';
 import { getUIPath } from './pathResolver.js';
-import { pathToFileURL } from 'url';
 
 /*
 Functions for sending events from main to renderer
@@ -52,7 +51,7 @@ export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
 }
 
 export function validateEventFrame(frame: WebFrameMain) {
-  const uiPath = pathToFileURL(getUIPath()).toString();
+  const uiPath = getUIPath().toString();
 
   // Allow localhost in development
   if (isDev() && new URL(frame.url).host === 'localhost:5123') {

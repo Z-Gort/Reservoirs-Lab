@@ -12,7 +12,7 @@ interface LeftSidebarProps {
   setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>;
   selectedColumn: string | null;
   setSelectedColumn: React.Dispatch<React.SetStateAction<string | null>>;
-  hoveredMetadata: Record<string, any> | null; // New prop
+  hoveredMetadata: Record<string, any> | null; 
   onRefresh: (pointCount: number) => void;
   selectedPointData:
     | { column: string; correlation: number; pValue: number }[]

@@ -9,16 +9,19 @@ class WindowManager {
 
   public createMainWindow(): BrowserWindow {
     if (this.mainWindow) return this.mainWindow;
-
+  
     this.mainWindow = new BrowserWindow({
       webPreferences: { preload: getPreloadPath() },
     });
-
+  
     const url = isDev() ? "http://localhost:5123" : getUIPath();
-    this.mainWindow.loadURL(url);
-
+  
+    this.mainWindow.loadURL(url).catch((error) => {
+      console.log("Main window failed to load:", error);
+    });
+  
     this.handleCloseEvents(this.mainWindow);
-
+  
     return this.mainWindow;
   }
 
@@ -78,7 +81,9 @@ class WindowManager {
       }
     });
 
-    dbWindow.webContents.openDevTools({ mode: "detach" });
+    if (isDev()) {
+      dbWindow.webContents.openDevTools({ mode: "detach" });
+  }
 
     this.databaseWindows.set(connection.database, dbWindow);
     return dbWindow;

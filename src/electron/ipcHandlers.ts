@@ -85,6 +85,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         ...connection,
         port: parseInt(connection.port, 10),
       };
+      console.log("GETTING VECTOR DATA")
       const client = new Client(clientConfig);
       await client.connect();
 

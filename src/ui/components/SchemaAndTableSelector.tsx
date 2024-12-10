@@ -44,7 +44,7 @@ const SchemaAndTableSelector: React.FC<SchemaAndTableSelectorProps> = ({
       })
       .catch((err) => {
         console.error("Failed to fetch schemas:", err);
-        onError("Connection failed... Close and retry.");
+        onError("Connection failed... Check the connection then close and retry.");
       });
   }, [connection]);
 
