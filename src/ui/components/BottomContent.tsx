@@ -15,7 +15,6 @@ const BottomContent: React.FC<BottomContentProps> = ({
   onRefresh,
   selectedPointData,
 }) => {
-  console.log("BottomContent - selectedPointData:", selectedPointData);
   const [pointCount, setPointCount] = useState<number | string>(100);
   // Default to 100 points
   const theme = useTheme();

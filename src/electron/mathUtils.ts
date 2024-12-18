@@ -14,7 +14,7 @@ export function computeCosineSimilarity(
   const magnitudeB = Math.sqrt(vecB.reduce((sum, b) => sum + b ** 2, 0));
 
   if (magnitudeA === 0 || magnitudeB === 0) {
-    return 0; // Handle zero-magnitude vectors
+    return 0; 
   }
 
   return dotProduct / (magnitudeA * magnitudeB);
@@ -39,7 +39,7 @@ function computePearsonCorrelation(x: number[], y: number[]): number {
   );
 
   if (denominator === 0) {
-    return 0; // Handle cases where the data has no variability
+    return 0; 
   }
 
   return numerator / denominator;
@@ -59,51 +59,37 @@ export const computeCorrelations = (
   for (const key of metadataKeys) {
     const values = vectorsWithMetadata.map(({ metadata }) => metadata[key]);
 
-    // Check if the column is numeric or convertible to numeric
     const isColumnNumeric = values.every((v) => {
-      console.log("Processing value:", v);
       if (typeof v === "number") {
-        console.log("Is number:", v);
         return true;
       }
       if (typeof v === "string") {
         const trimmedValue = v.trim();
         const parsedValue = parseFloat(trimmedValue);
-        console.log("String:", v, "| Trimmed:", trimmedValue, "| Parsed:", parsedValue);
         return !isNaN(parsedValue) && !isNaN(Number(trimmedValue));
       }
-      console.log("Non-numeric:", v);
       return false;
     });
 
     if (isColumnNumeric) {
-      // Convert all values to numbers (if needed)
       const numericValues = values.map((v) =>
         typeof v === "number" ? v : parseFloat(v as string)
       );
 
-      // Compute the correlation
       const correlation = computePearsonCorrelation(
         cosineSimilarities,
         numericValues
       );
 
-      // Compute the p-value
-      const n = numericValues.length; // Number of samples
+      const n = numericValues.length; 
       const tStatistic =
         correlation * Math.sqrt((n - 2) / (1 - correlation ** 2));
       const degreesOfFreedom = n - 2;
 
-      // Use a function to calculate p-value from the t-statistic
       const pValue = computePValueFromTStatistic(tStatistic, degreesOfFreedom);
-
-      console.log(`P-value for ${key}:`, pValue);
 
       correlations.push({ column: key, correlation, pValue });
     } else {
-      console.log(
-        `Column ${key} is not numeric or cannot be converted to numeric.`
-      );
     }
   }
 
@@ -111,8 +97,6 @@ export const computeCorrelations = (
   const sortedCorrelations = correlations
     .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
     .slice(0, 5);
-
-  console.log("Final sorted correlations:", sortedCorrelations);
 
   return sortedCorrelations;
 };

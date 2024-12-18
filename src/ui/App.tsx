@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import "./App.css";
 import { useStatistics } from "./useStatistics";
-import { Chart } from "./Chart";
 import Button from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 import { Box, Fab } from "@mui/material";
@@ -11,32 +10,22 @@ import logoImage from "./assets/logo.png";
 import ConnectionsGrid from "./components/ConnectionsGrid";
 
 function App() {
-  const [activeView, setActiveView] = useState<View>("CPU");
-
-  useEffect(() => {
-    return window.electron.subscribeChangeView((view) => setActiveView(view));
-  }, []);
-
   const openPopup = () => {
-    window.electron.send("openPopup", undefined); // Send event to main process
+    window.electron.send("openPopup", undefined); 
   };
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
 
   useEffect(() => {
-    // Fetch initial connections on app load
     window.electron.getConnections().then((initialConnections) => {
       setConnections(initialConnections);
     });
 
-    // Listen for updates from the main process
     const unsubscribe = window.electron.on(
       "connectionsUpdated",
       (updatedConnections) => {
         setConnections(updatedConnections);
       }
     );
-
-    // Cleanup listener on component unmount
     return () => {
       unsubscribe();
     };

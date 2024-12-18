@@ -24,7 +24,6 @@ const DatabaseLayout: React.FC<{ connection: DatabaseConnection }> = ({
   const handleRefresh = (newPointCount: number) => {
     setPointCount(newPointCount); // Update the point count
     setRefreshTrigger((prev) => !prev); // Toggle the refresh trigger
-    console.log(`Refreshing graph with ${newPointCount} points`);
   };
 
   const handlePointClick = async (selectedID: string, rowIDs: string[]) => {

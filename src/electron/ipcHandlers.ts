@@ -85,7 +85,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         ...connection,
         port: parseInt(connection.port, 10),
       };
-      console.log("GETTING VECTOR DATA")
       const client = new Client(clientConfig);
       await client.connect();
 
@@ -97,7 +96,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           throw new Error(`No uuidColumn found for ${schema}.${table}`);
         }
 
-        // Fetch the high-dimensional vector if selectedID is provided
+
         if (selectedID) {
           const centerQuery = `
           SELECT ${column} 
@@ -116,7 +115,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
 
         const rows = await getRandomRows(client, schema, table, column, limit);
 
-        // Step 3: Extract vectors and metadata
         const vectorsWithMetadata = rows.map((row) => {
           const vector = row[column];
           const metadata = { ...row };
@@ -126,13 +124,11 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         const vectors = vectorsWithMetadata.map((item) => item.vector);
         let reducedVectors;
         if (selectedID) {
-          // Run dimensionality reduction with weighting based on centerPoint
           reducedVectors = await runDimensionalityReduction(
             vectors,
             centerPoint
           );
         } else {
-          // Run dimensionality reduction normally
           reducedVectors = await runDimensionalityReduction(vectors);
         }
 
@@ -161,7 +157,7 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         table,
         column,
         selectedID,
-        rowIDs, // Array of row IDs currently displayed in the plot
+        rowIDs, 
       }: {
         connection: DatabaseConnection;
         schema: string;
@@ -179,7 +175,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
       await client.connect();
       const uuidColumn = await getUuidColumn(client, schema, table);
       try {
-        // Step 1: Fetch the selected vector
         const vectorQuery = `
           SELECT ${column}
           FROM ${schema}.${table}
@@ -192,7 +187,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
         let selectedVector = vectorRes.rows[0][column];
         selectedVector = JSON.parse(selectedVector);
 
-        // Step 2: Fetch vectors and metadata for provided rowIDs
         const subsetQuery = `
           SELECT ${uuidColumn}, ${column}, * -- Replace * with specific columns if necessary
           FROM ${schema}.${table}
@@ -206,7 +200,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           return { vector, metadata };
         });
 
-        // Step 3: Compute cosine similarities for the subset
         const cosineSimilarities = vectorsWithMetadata.map(({ vector }) => {
           vector = JSON.parse(vector);
           return computeCosineSimilarity(selectedVector, vector);
@@ -216,7 +209,6 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
           vectorsWithMetadata,
           cosineSimilarities
         );
-        console.log("Top correlations:", topCorrelations);
 
         return topCorrelations;
       } catch (error) {

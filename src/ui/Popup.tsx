@@ -10,7 +10,6 @@ function Popup() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    console.log("Setting up listener for databaseConnectionStatus");
 
     const unsubscribe = window.electron.on(
       "databaseConnectionStatus",
@@ -46,7 +45,6 @@ function Popup() {
 
     try {
       window.electron.send("connectToDatabase", connectionData);
-      console.log("Connection data sent successfully:", connectionData);
     } catch (error) {
       console.error("Failed to connect to the database:", error);
     }

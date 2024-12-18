@@ -138,7 +138,6 @@ export const getRandomRows = async (
   column: string,
   limit: number
 ) => {
-  // Step 1: Get total row count in the table
   const countQuery = `SELECT COUNT(*) AS total_rows FROM ${schema}.${table};`;
   const countRes = await client.query(countQuery);
   const totalRows = countRes.rows[0].total_rows;
@@ -148,13 +147,11 @@ export const getRandomRows = async (
     throw new Error("The table is empty. No rows to sample.");
   }
 
-  // Step 2: Calculate oversampling percentage
   const oversamplePercentage = Math.min(
     ((limit * oversampleFactor) / totalRows) * 100,
     100
   );
 
-  // Step 3: Use TABLESAMPLE BERNOULLI to oversample rows
   const sampleQuery = `
   WITH sampled_rows AS (
     SELECT ${column}, * -- Replace * with specific columns if necessary
@@ -167,16 +164,9 @@ export const getRandomRows = async (
 `;
   const sampleRes = await client.query(sampleQuery, [limit]);
 
-  return sampleRes.rows; // Return the sampled rows
+  return sampleRes.rows; 
 };
 
-/**
- * Helper function to locate the UUID column in a given table schema.
- * @param client - The PostgreSQL client.
- * @param schema - The schema name.
- * @param table - The table name.
- * @returns The name of the UUID column if found; otherwise, throws an error.
- */
 export const getUuidColumn = async (
   client: pg.Client,
   schema: string,

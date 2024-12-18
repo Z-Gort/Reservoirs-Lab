@@ -22,7 +22,7 @@ electron.contextBridge.exposeInMainWorld("electron", {
       "getSchemas",
       { connection: DatabaseConnection },
       string[]
-    >("getSchemas", { connection }), // Explicitly define the arguments and result types
+    >("getSchemas", { connection }),
 
   getTables: ({
     connection,
@@ -94,7 +94,6 @@ function ipcOn<Key extends keyof EventPayloadMapping>(
   key: Key,
   callback: (payload: EventPayloadMapping[Key]) => void
 ) {
-  console.log(`ipcOn triggered for event: ${key}`, callback);
 
   const cb = (_: Electron.IpcRendererEvent, payload: any) => callback(payload);
   electron.ipcRenderer.on(key, cb);

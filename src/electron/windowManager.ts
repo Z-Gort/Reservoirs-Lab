@@ -17,7 +17,6 @@ class WindowManager {
     const url = isDev() ? "http://localhost:5123" : getUIPath();
   
     this.mainWindow.loadURL(url).catch((error) => {
-      console.log("Main window failed to load:", error);
     });
   
     this.handleCloseEvents(this.mainWindow);
@@ -81,23 +80,17 @@ class WindowManager {
       }
     });
 
-    if (isDev()) {
-      dbWindow.webContents.openDevTools({ mode: "detach" });
-  }
-
     this.databaseWindows.set(connection.database, dbWindow);
     return dbWindow;
   }
 
   public openDatabaseWindow(connection: DatabaseConnection): BrowserWindow {
-    // Check if a window for this database already exists
     const existingWindow = this.databaseWindows.get(connection.database);
     if (existingWindow) {
-      existingWindow.focus(); // Bring the existing window to the front
+      existingWindow.focus();
       return existingWindow;
     }
   
-    // Create a new database window if none exists
     const dbWindow = new BrowserWindow({
       width: 1000,
       height: 700,
@@ -112,15 +105,14 @@ class WindowManager {
     dbWindow.loadURL(url);
   
     dbWindow.on("closed", () => {
-      this.databaseWindows.delete(connection.database); // Remove from Map on close
+      this.databaseWindows.delete(connection.database);
       if (this.databaseWindows.size === 0) {
-        this.mainWindow?.show(); // Show main window if no database windows are open
+        this.mainWindow?.show(); 
       }
     });
+
   
-    dbWindow.webContents.openDevTools({ mode: "detach" });
-  
-    this.databaseWindows.set(connection.database, dbWindow); // Add to Map
+    this.databaseWindows.set(connection.database, dbWindow); 
     return dbWindow;
   }
   

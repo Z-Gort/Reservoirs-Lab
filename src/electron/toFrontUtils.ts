@@ -23,7 +23,7 @@ export function ipcMainHandleWithArgs<Key extends keyof EventPayloadMapping>(
   handler: (
     event: Electron.IpcMainInvokeEvent,
     payload: EventPayloadMapping[Key]
-  ) => Promise<any> // Adjust return type if needed
+  ) => Promise<any> 
 ) {
   ipcMain.handle(key, (event, payload) => {
     validateEventFrame(event.senderFrame);
@@ -46,19 +46,16 @@ export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
   webContents: WebContents,
   payload: EventPayloadMapping[Key]
 ) {
-  //console.log("sending", key, payload)
   webContents.send(key, payload);
 }
 
 export function validateEventFrame(frame: WebFrameMain) {
   const uiPath = getUIPath().toString();
 
-  // Allow localhost in development
   if (isDev() && new URL(frame.url).host === 'localhost:5123') {
     return;
   }
 
-  // Allow hash-based routes or slight variations
   if (!frame.url.startsWith(uiPath)) {
     throw new Error('Malicious event');
   }
