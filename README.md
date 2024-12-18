@@ -38,11 +38,8 @@ Reservoirs lab is a lightweight Electron app designed to connect directly to a P
    - Enter your Postgres database connection string in the app's connection window.
 2. **Visualize Vectors**:
    - View an interactive plot of your vector data.
-   - Zoom in, pan, and filter data based on metadata columns.
 3. **Explore Neighborhoods**:
-   - Click on a point to view similar data points and their associated metadata.
-4. **Filter and Query**:
-   - Use metadata filters to explore correlations and relationships within your data.
+   - Click on a point to view data points by similarity and metadata correlated with semantic similarity to a point.
 
 ![res-labs-gif](https://github.com/user-attachments/assets/6efe0ff6-9dba-4254-b5eb-79e2a742448a)
 
