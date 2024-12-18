@@ -1,13 +1,13 @@
-# Vector Visualizer: Postgres VectorDB GUI and Data Insights
+# Vector Visualizer: Postgres VectorDB GUI and Data Insights 🐘✨
 
 ## Overview
 Vector Visualizer is a lightweight Electron app designed to connect directly to a Postgres database and visualize high-dimensional vector embeddings stored alongside structured data. It allows users to explore their data interactively and see correlations between metadata and semantic similarity of vector embeddings.
 
 ## Features
-- **Postgres Integration**: Connect directly to your Postgres database via a connection string.
-- **Vector Visualization**: Plot and explore high-dimensional vectors interactively.
-- **Neighborhood Exploration**: Click on a data point to view points in cosine similarity from point (while original clustering).
-- **Lightweight and Local**: Runs locally on your machine, keeping your data private.
+- **Postgres Integration**: Connect directly to your Postgres database via a connection string. 🛠️
+- **Vector Visualization**: Plot and explore high-dimensional vectors interactively. 📊
+- **Neighborhood Exploration**: Click on a data point to view points in cosine similarity from point (while original clustering). 🔍
+- **Lightweight and Local**: Runs locally on your machine, keeping your data private. 🖥️
 
 
 ## Installation
@@ -44,5 +44,5 @@ Vector Visualizer is a lightweight Electron app designed to connect directly to 
 4. **Filter and Query**:
    - Use metadata filters to explore correlations and relationships within your data.
 
-## Screenshots
-_Add screenshots or GIFs of your application interface here to demonstrate its functionality._
+![res-labs-gif](https://github.com/user-attachments/assets/6efe0ff6-9dba-4254-b5eb-79e2a742448a)
+
