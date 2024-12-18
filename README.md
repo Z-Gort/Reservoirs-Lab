@@ -1,12 +1,12 @@
-# Vector Visualizer: Postgres VectorDB GUI and Data Insights 🐘✨
+# Reservoirs Lab: Postgres VectorDB GUI and Data Insights 🐘✨
 
 ## Overview
-Vector Visualizer is a lightweight Electron app designed to connect directly to a Postgres database and visualize high-dimensional vector embeddings stored alongside structured data. It allows users to explore their data interactively and see correlations between metadata and semantic similarity of vector embeddings.
+Reservoirs lab is a lightweight Electron app designed to connect directly to a Postgres database and visualize high-dimensional vector embeddings stored alongside structured data. It allows users to explore their data interactively and see correlations between metadata and semantic similarity of vector embeddings.
 
 ## Features
 - **Postgres Integration**: Connect directly to your Postgres database via a connection string. 🛠️
 - **Vector Visualization**: Plot and explore high-dimensional vectors interactively. 📊
-- **Neighborhood Exploration**: Click on a data point to view points in cosine similarity from point (while original clustering). 🔍
+- **Neighborhood Exploration**: Click on a data point to view points by cosine similarity from point (while maintaining clustering). 🔍
 - **Lightweight and Local**: Runs locally on your machine, keeping your data private. 🖥️
 
 
