@@ -18,7 +18,7 @@ Reservoirs lab is a lightweight Electron app designed to connect directly to a P
 ### Running the App Locally
 1. Clone this repository:
    ```bash
-   [git clone https://github.com/yourusername/vector-visualizer.git](https://github.com/Z-Gort/Reservoirs-Lab.git)
+   git clone https://github.com/z-gort/reservoirs-lab.git
    ```
 2. Navigate to the project directory:
    ```bash
