@@ -99,9 +99,9 @@ export function setupIpcHandlers(mainWindow: BrowserWindow) {
 
         if (selectedID) {
           const centerQuery = `
-          SELECT ${column} 
-          FROM ${schema}.${table} 
-          WHERE ${uuidColumn} = $1; -- Assuming 'id' is the primary key
+          SELECT "${column}"
+          FROM ${schema}."${table}" 
+          WHERE "${uuidColumn}" = $1; -- Assuming 'id' is the primary key
         `;
 
           const centerRes = await client.query(centerQuery, [selectedID]);
