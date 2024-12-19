@@ -120,7 +120,7 @@ export async function getVectorColumns(
     WHERE a.attrelid = $1::regclass
       AND t.typname = 'vector';
   `;
-    const res = await client.query(query, [`${schema}.${table}`]);
+    const res = await client.query(query, [`${schema}."${table}"`]);
     return res.rows.map((row) => ({
       column_name: row.column_name,
       has_index: !!row.index_name,
@@ -154,8 +154,8 @@ export const getRandomRows = async (
 
   const sampleQuery = `
   WITH sampled_rows AS (
-    SELECT ${column}, * -- Replace * with specific columns if necessary
-    FROM ${schema}.${table}
+    SELECT "${column}", * -- Replace * with specific columns if necessary
+    FROM ${schema}."${table}"
     TABLESAMPLE BERNOULLI(${oversamplePercentage})
   )
   SELECT *
