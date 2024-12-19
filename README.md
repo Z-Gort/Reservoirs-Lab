@@ -5,7 +5,7 @@ Reservoirs lab is a lightweight Electron app designed to connect directly to a P
 
 ## Features
 - **Postgres Integration**: Connect directly to your Postgres database via a connection string. 🛠️
-- **Vector Visualization**: Plot and explore high-dimensional vectors interactively (UMAP used for reduction). 📊
+- **Vector Visualization**: Plot and explore high-dimensional vectors interactively (UMAP with cosine metric used for reduction). 📊
 - **Neighborhood Exploration**: Click on a data point to view points by cosine similarity from point (while maintaining clustering). 🔍
 - **Lightweight and Local**: Runs locally on your machine, keeping your data private. 🖥️
 
