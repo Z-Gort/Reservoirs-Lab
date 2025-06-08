@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repo is no longer mantained. Check out [dbSurface](https://github.com/dbSurface/dbSurface) as a sleeker and more powerful tool for pgvector embedding exploration.
+
 # Reservoirs Lab: Postgres VectorDB GUI and Data Insights 🐘✨
 
 ## Overview
